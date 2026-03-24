@@ -43,7 +43,7 @@ public class RollbackListMenu {
         
         List<String> lore = new ArrayList<>();  
         if (pageNumber == 1) {
-            ItemStack mainMenu = buttons.backButton(MessageData.getMainMenuButton(), logType, 0, null);                     
+            ItemStack mainMenu = buttons.mainMenuNavButton(MessageData.getMainMenuButton(), logType);
             inventory.setItem(InventoryName.ROLLBACK_LIST.getSize() - 8, mainMenu);
         }       
 

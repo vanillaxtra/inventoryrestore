@@ -22,7 +22,7 @@
 - **META-INF/**: Update any manifest references
 
 ### 1.2 Package and Class Renames
-- Rename `com.nuclyon.technicallycoded.inventoryrollback` -> `com.inventoryrestore`
+- Rename legacy package roots to `com.notauthorised.inventoryrestore`
 - Rename `InventoryRollbackPlus.java` -> `InventoryRestore.java`
 - Update all imports and references (Commands, ConfigData, MessageData, etc.)
 

@@ -4,6 +4,7 @@ import com.notauthorised.inventoryrestore.InventoryRestore;
 import com.notauthorised.inventoryrestore.customdata.CustomDataItemEditor;
 import com.notauthorised.inventoryrestore.config.MessageData;
 import com.notauthorised.inventoryrestore.data.LogType;
+import com.notauthorised.inventoryrestore.data.RestoreSession;
 import com.notauthorised.inventoryrestore.gui.Buttons;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import org.bukkit.Bukkit;
@@ -74,6 +75,9 @@ public class OverwriteWarningMenu {
         confirmNbt.setString("uuid", target.getUniqueId().toString());
         confirmNbt.setString("logType", logType.name());
         confirmNbt.setLong("timestamp", timestamp);
+        if (RestoreSession.isRefundContext(staff.getUniqueId())) {
+            confirmNbt.setString("refund", "1");
+        }
         inventory.setItem(48, confirmNbt.setItemData());
 
         // Warning text

@@ -15,9 +15,13 @@ import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import com.notauthorised.inventoryrestore.gui.menu.*;
+import com.notauthorised.inventoryrestore.data.RestoreSession;
+import com.notauthorised.inventoryrestore.data.RestoreStatsManager;
+import com.notauthorised.inventoryrestore.inventory.PlayerInventoryEmptyCheck;
 import com.notauthorised.inventoryrestore.inventory.RestoreInventory;
+import com.notauthorised.inventoryrestore.util.DiscordRefundWebhook;
+import com.notauthorised.inventoryrestore.util.ExportStorageHelper;
 import org.bukkit.*;
-import org.bukkit.block.ShulkerBox;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,11 +30,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -53,10 +55,13 @@ public class ClickGUI implements Listener {
         String title = e.getView().getTitle();
         if (!title.equals(InventoryName.MAIN_MENU.getName()) 
                 && !title.equals(InventoryName.PLAYER_MENU.getName()) 
+                && !title.equals(InventoryName.REFUND_MENU.getName())
                 && !title.equalsIgnoreCase(InventoryName.ROLLBACK_LIST.getName())
                 && !title.equalsIgnoreCase(InventoryName.MAIN_BACKUP.getName())
                 && !title.equalsIgnoreCase(InventoryName.ENDER_CHEST_BACKUP.getName())
-                && !title.equals(InventoryName.OVERWRITE_WARNING.getName()))
+                && !title.equalsIgnoreCase(InventoryName.EXPORT_STORAGE.getName())
+                && !title.equals(InventoryName.OVERWRITE_WARNING.getName())
+                && !title.equals(InventoryName.REFUND_HISTORY.getName()))
             return;
 
         e.setCancelled(true);
@@ -83,10 +88,13 @@ public class ClickGUI implements Listener {
         String title = e.getView().getTitle();
         if (!title.equals(InventoryName.MAIN_MENU.getName()) 
                 && !title.equals(InventoryName.PLAYER_MENU.getName()) 
+                && !title.equals(InventoryName.REFUND_MENU.getName())
                 && !title.equalsIgnoreCase(InventoryName.ROLLBACK_LIST.getName())
                 && !title.equalsIgnoreCase(InventoryName.MAIN_BACKUP.getName())
                 && !title.equalsIgnoreCase(InventoryName.ENDER_CHEST_BACKUP.getName())
-                && !title.equals(InventoryName.OVERWRITE_WARNING.getName()))
+                && !title.equalsIgnoreCase(InventoryName.EXPORT_STORAGE.getName())
+                && !title.equals(InventoryName.OVERWRITE_WARNING.getName())
+                && !title.equals(InventoryName.REFUND_HISTORY.getName()))
             return;
 
         //Check if inventory is a virtual one and not one that has the same name on a player chest
@@ -105,8 +113,13 @@ public class ClickGUI implements Listener {
         }
 
         //Listener for player menu
-        else if (title.equals(InventoryName.PLAYER_MENU.getName())) {
-            playerMenu(e,staff, icon);
+        else if (title.equals(InventoryName.PLAYER_MENU.getName())
+                || title.equals(InventoryName.REFUND_MENU.getName())) {
+            playerMenu(e, staff, icon);
+        }
+
+        else if (title.equals(InventoryName.REFUND_HISTORY.getName())) {
+            refundHistoryMenu(e, staff, icon);
         }
 
         //Listener for rollback list menu
@@ -122,6 +135,10 @@ public class ClickGUI implements Listener {
         //Listener for enderchest backup menu
         else if (title.equals(InventoryName.ENDER_CHEST_BACKUP.getName())) {
             enderChestBackupMenu(e,staff, icon);
+        }
+
+        else if (title.equalsIgnoreCase(InventoryName.EXPORT_STORAGE.getName())) {
+            exportStorageMenu(e, staff, icon);
         }
 
         //Listener for overwrite warning menu
@@ -145,7 +162,8 @@ public class ClickGUI implements Listener {
                 int page = nbt.getInt("page");
 
                 //Selected to go back to main menu
-                MainMenu menu = new MainMenu(staff, page);
+                boolean showNames = !RestoreSession.isRefundContext(staff.getUniqueId());
+                MainMenu menu = new MainMenu(staff, page, showNames);
 
                 staff.openInventory(menu.getInventory());
                 Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::getMainMenu);
@@ -153,7 +171,8 @@ public class ClickGUI implements Listener {
             //Clicked a player head
             else {
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(nbt.getString("uuid")));
-                PlayerMenu menu = new PlayerMenu(staff, offlinePlayer);
+                boolean refund = RestoreSession.isRefundContext(staff.getUniqueId());
+                PlayerMenu menu = new PlayerMenu(staff, offlinePlayer, refund);
 
                 staff.openInventory(menu.getInventory());
                 Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::getPlayerMenu);
@@ -170,27 +189,50 @@ public class ClickGUI implements Listener {
         if (icon == null)
             return;
 
-        if ((e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.PLAYER_MENU.getSize())) {				
+        int menuSize = InventoryName.PLAYER_MENU.getSize();
+        if ((e.getRawSlot() >= 0 && e.getRawSlot() < menuSize)) {
+            if (e.getRawSlot() == 26 && icon.getType() == Material.WRITTEN_BOOK
+                    && InventoryName.REFUND_MENU.getName().equals(e.getView().getTitle())) {
+                CustomDataItemEditor bookNbt = CustomDataItemEditor.editItem(icon);
+                if ("1".equals(bookNbt.getString("openRefundHistory")) && bookNbt.getString("uuid") != null) {
+                    UUID hid = UUID.fromString(bookNbt.getString("uuid"));
+                    staff.openInventory(new RefundHistoryMenu(staff, hid).getInventory());
+                    return;
+                }
+            }
             CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
+            if ("1".equals(nbt.getString("staticInfo"))) {
+                return;
+            }
             if (!nbt.hasUUID())
                 return;
 
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(nbt.getString("uuid")));
 
-            //Clicked player head
-            if (e.getRawSlot() == 0) {
-                MainMenu menu = new MainMenu(staff, 1);
+            LogType logType = LogType.valueOf(nbt.getString("logType"));
+            RollbackListMenu menu = new RollbackListMenu(staff, offlinePlayer, logType, 1);
 
-                staff.openInventory(menu.getInventory());
-                Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::getMainMenu);
-            } else {
-                LogType logType = LogType.valueOf(nbt.getString("logType"));
-                RollbackListMenu menu = new RollbackListMenu(staff, offlinePlayer, logType, 1);
+            staff.openInventory(menu.getInventory());
+            Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::showBackups);
 
-                staff.openInventory(menu.getInventory());
-                Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::showBackups);
+        } else {
+            if (e.getRawSlot() >= e.getInventory().getSize() && !e.isShiftClick()) {
+                e.setCancelled(false);
             }
+        }
+    }
 
+    private void refundHistoryMenu(InventoryClickEvent e, Player staff, ItemStack icon) {
+        if (e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.REFUND_HISTORY.getSize()) {
+            if (icon == null) return;
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
+            if ("BACK".equals(nbt.getString(RefundHistoryMenu.NBT_ACTION)) && nbt.getString("uuid") != null) {
+                UUID id = UUID.fromString(nbt.getString("uuid"));
+                OfflinePlayer op = Bukkit.getOfflinePlayer(id);
+                PlayerMenu menu = new PlayerMenu(staff, op, true);
+                staff.openInventory(menu.getInventory());
+                Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::getPlayerMenu);
+            }
         } else {
             if (e.getRawSlot() >= e.getInventory().getSize() && !e.isShiftClick()) {
                 e.setCancelled(false);
@@ -248,8 +290,9 @@ public class ClickGUI implements Listener {
                 }.runTaskAsynchronously(main);
             } 
 
-            //Player has selected a page icon
-            else if (icon.getType().equals(Buttons.getPageSelectorIcon())) {
+            // Page / back (banner for pages, arrow for "back to player" on page 1)
+            else if (icon.getType().equals(Buttons.getPageSelectorIcon())
+                    || icon.getType().equals(Buttons.getNavBackIcon())) {
                 int page = nbt.getInt("page");
 
                 //Selected to go back to main menu
@@ -287,103 +330,42 @@ public class ClickGUI implements Listener {
             LogType logType = LogType.valueOf(nbt.getString("logType"));
             Long timestamp = nbt.getLong("timestamp");
 
-            //Click on page selector button to go back to rollback menu
-            if (icon.getType().equals(Buttons.getPageSelectorIcon())) {
+            // Back to rollback list (arrow) or legacy banner back
+            if (icon.getType().equals(Buttons.getNavBackIcon())
+                    || icon.getType().equals(Buttons.getPageSelectorIcon())) {
                 RollbackListMenu menu = new RollbackListMenu(staff, offlinePlayer, logType, 1);
 
                 staff.openInventory(menu.getInventory());
                 Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::showBackups);
             }
 
-            //Click on page selector button to go back to rollback menu
-            else if (e.getRawSlot() == MainInventoryBackupMenu.GIVE_SHULKERS_BUTTON_SLOT) {
-                // Perm check
+            else if (e.getRawSlot() == MainInventoryBackupMenu.EXPORT_STORAGE_BUTTON_SLOT
+                    && icon.getType().equals(Buttons.getExportStorageIcon())) {
                 if (!staff.hasPermission("inventoryrestore.restore")) {
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getNoPermission());
                     return;
                 }
-
-                Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), () -> {
-                    // Unsupported on older versions
-                    if (main.getVersion().lessThan(MCVersion.v1_11.toBukkitVersion())) {
-                        return;
-                    }
-
-                    // Give shulkers
-
-                    // Init from MySQL or, if YAML, init & load config file
-                    PlayerData data = new PlayerData(offlinePlayer, logType, timestamp);
-
-                    // Get data if using MySQL
-                    if (ConfigData.getSaveType() == ConfigData.SaveType.MYSQL) {
-                        try {
-                            data.getAllBackupData().get();
-                        } catch (ExecutionException | InterruptedException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-
-                    ItemStack[] mainInventory = data.getMainInventory();
-                    ItemStack[] extraItems = data.getArmour();
-
-                    if (extraItems == null || extraItems.length == 0) {
-                        int extraItemsLen = mainInventory.length - 36;
-                        extraItems = new ItemStack[extraItemsLen];
-                        System.arraycopy(mainInventory, 36, extraItems, 0, extraItemsLen);
-                    }
-
-                    ItemStack[] hotBar = Arrays.copyOfRange(mainInventory, 0, Math.min(mainInventory.length, 9));
-                    ItemStack[] invContents = mainInventory.length >= 9
-                            ? Arrays.copyOfRange(mainInventory, 9, mainInventory.length)
-                            : new ItemStack[36];
-
-                    ItemStack[] firstShulkerContents = new ItemStack[27];
-                    ItemStack[] secondShulkerContents = new ItemStack[27];
-
-                    System.arraycopy(hotBar, 0, firstShulkerContents, 0, hotBar.length);
-                    System.arraycopy(extraItems, 0, firstShulkerContents, 9, Math.min(extraItems.length, 18));
-
-                    System.arraycopy(invContents, 0, secondShulkerContents, 0, Math.min(invContents.length, 27));
-
-                    ItemStack firstShulker = new ItemStack(Material.SHULKER_BOX);
-                    ItemStack secondShulker = new ItemStack(Material.SHULKER_BOX);
-
-                    ItemMeta firstMeta = firstShulker.getItemMeta();
-                    if (firstMeta instanceof BlockStateMeta) {
-                        BlockStateMeta blockMeta = (BlockStateMeta) firstMeta;
-                        if (blockMeta.getBlockState() instanceof ShulkerBox) {
-                            ShulkerBox shulkerBox = (ShulkerBox) blockMeta.getBlockState();
-                            shulkerBox.getInventory().setContents(firstShulkerContents);
-                            blockMeta.setBlockState(shulkerBox);
-                            firstShulker.setItemMeta(blockMeta);
-                        }
-                    }
-
-                    ItemMeta secondMeta = secondShulker.getItemMeta();
-                    if (secondMeta instanceof BlockStateMeta) {
-                        BlockStateMeta blockMeta = (BlockStateMeta) secondMeta;
-                        if (blockMeta.getBlockState() instanceof ShulkerBox) {
-                            ShulkerBox shulkerBox = (ShulkerBox) blockMeta.getBlockState();
-                            shulkerBox.getInventory().setContents(secondShulkerContents);
-                            blockMeta.setBlockState(shulkerBox);
-                            secondShulker.setItemMeta(blockMeta);
-                        }
-                    }
-
-                    Bukkit.getScheduler().runTask(main, t -> {
-                        staff.getInventory().addItem(firstShulker, secondShulker);
-                        staff.closeInventory();
-                    });
-                });
+                if (main.getVersion().lessThan(MCVersion.v1_11.toBukkitVersion())) {
+                    return;
+                }
+                Bukkit.getScheduler().runTask(main, () ->
+                        staff.openInventory(new ExportStorageMenu(staff, offlinePlayer.getUniqueId(), logType, timestamp).getInventory()));
             }
 
-            //Clicked icon to overwrite player inventory - open warning menu first
+            //Clicked icon to overwrite player inventory - open warning menu first (skip if online & empty inv)
             else if (icon.getType().equals(Buttons.getRestoreAllInventoryIcon())) {
                 if (!staff.hasPermission("inventoryrestore.restore")) {
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getNoPermission());
                     return;
                 }
-                // Open overwrite warning GUI
+                if (offlinePlayer.isOnline()) {
+                    Player online = (Player) offlinePlayer;
+                    if (!PlayerInventoryEmptyCheck.hasAnything(online)) {
+                        performFullRestore(staff, offlinePlayer, logType, timestamp,
+                                RestoreSession.isRefundContext(staff.getUniqueId()));
+                        return;
+                    }
+                }
                 OverwriteWarningMenu warnMenu = new OverwriteWarningMenu(staff, offlinePlayer, logType, timestamp);
                 staff.openInventory(warnMenu.getInventory());
                 warnMenu.startLiveRefresh();
@@ -553,8 +535,9 @@ public class ClickGUI implements Listener {
             LogType logType = LogType.valueOf(nbt.getString("logType"));
             Long timestamp = nbt.getLong("timestamp");
 
-            // Click on page selector button to go back to backup menu
-            if (icon.getType().equals(Buttons.getPageSelectorIcon())) {
+            // Back / pagination (arrow from main backup, banner for multi-page ender)
+            if (icon.getType().equals(Buttons.getNavBackIcon())
+                    || icon.getType().equals(Buttons.getPageSelectorIcon())) {
 
                 //Player has selected a page icon
                 int page = nbt.getInt("page");
@@ -710,6 +693,93 @@ public class ClickGUI implements Listener {
         }
     }
 
+    private void exportStorageMenu(InventoryClickEvent e, Player staff, ItemStack icon) {
+        if (e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.EXPORT_STORAGE.getSize()) {
+            if (icon == null) return;
+
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
+            String modeStr = nbt.getString(ExportStorageMenu.NBT_EXPORT_MODE);
+            if (modeStr == null || modeStr.isEmpty()) return;
+
+            if (!staff.hasPermission("inventoryrestore.restore")) {
+                staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getNoPermission());
+                return;
+            }
+
+            UUID targetUuid = UUID.fromString(nbt.getString("uuid"));
+            LogType logType = LogType.valueOf(nbt.getString("logType"));
+            long timestamp = nbt.getLong("timestamp");
+
+            if ("BACK".equals(modeStr)) {
+                staff.closeInventory();
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(targetUuid);
+                        PlayerData data = new PlayerData(offlinePlayer, logType, timestamp);
+                        if (ConfigData.getSaveType() == ConfigData.SaveType.MYSQL) {
+                            try {
+                                data.getAllBackupData().get();
+                            } catch (ExecutionException | InterruptedException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                        String location = data.getWorld() + "," + data.getX() + "," + data.getY() + "," + data.getZ();
+                        MainInventoryBackupMenu menu = new MainInventoryBackupMenu(staff, data, location);
+                        try {
+                            Future<InventoryView> future = main.getServer().getScheduler().callSyncMethod(main,
+                                    () -> staff.openInventory(menu.getInventory()));
+                            future.get();
+                            menu.showBackupItems();
+                        } catch (NullPointerException | ExecutionException | InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }.runTaskAsynchronously(main);
+                return;
+            }
+
+            final ExportStorageHelper.Mode mode;
+            try {
+                mode = ExportStorageHelper.Mode.valueOf(modeStr);
+            } catch (IllegalArgumentException ex) {
+                return;
+            }
+
+            if (main.getVersion().lessThan(MCVersion.v1_11.toBukkitVersion())) {
+                if (mode == ExportStorageHelper.Mode.SHULKER
+                        || mode == ExportStorageHelper.Mode.BARREL
+                        || mode == ExportStorageHelper.Mode.CHEST) {
+                    return;
+                }
+            }
+
+            staff.closeInventory();
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    PlayerData data = new PlayerData(Bukkit.getOfflinePlayer(targetUuid), logType, timestamp);
+                    if (ConfigData.getSaveType() == ConfigData.SaveType.MYSQL) {
+                        try {
+                            data.getAllBackupData().get();
+                        } catch (ExecutionException | InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                    ItemStack[] mainInv = data.getMainInventory();
+                    ItemStack[] armour = data.getArmour();
+                    ItemStack offhand = data.getOffhand();
+                    Bukkit.getScheduler().runTask(main, () ->
+                            ExportStorageHelper.giveExport(staff, mode, mainInv, armour, offhand));
+                }
+            }.runTaskAsynchronously(main);
+        } else {
+            if (e.getRawSlot() >= e.getInventory().getSize() && !e.isShiftClick()) {
+                e.setCancelled(false);
+            }
+        }
+    }
+
     private void overwriteWarningMenu(InventoryClickEvent e, Player staff, ItemStack icon) {
         if (icon == null || !icon.hasItemMeta()) return;
         if (e.getRawSlot() < 45) return; // Only handle bottom row buttons
@@ -738,11 +808,12 @@ public class ClickGUI implements Listener {
             });
         } else if ("confirm".equals(action)) {
             staff.closeInventory();
-            performFullRestore(staff, target, logType, timestamp);
+            boolean refund = "1".equals(nbt.getString("refund"));
+            performFullRestore(staff, target, logType, timestamp, refund);
         }
     }
 
-    private void performFullRestore(Player staff, OfflinePlayer target, LogType logType, Long timestamp) {
+    private void performFullRestore(Player staff, OfflinePlayer target, LogType logType, Long timestamp, boolean refund) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -772,10 +843,22 @@ public class ClickGUI implements Listener {
                         player.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestoredPlayer(staff.getName()));
                         if (!staff.getUniqueId().equals(player.getUniqueId()))
                             staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestored(target.getName()));
+                        long backupTs = timestamp != null ? timestamp : 0L;
+                        RestoreStatsManager.recordFullRestore(
+                                target.getUniqueId(), staff.getName(), refund, logType, backupTs);
+                        if (refund) {
+                            DiscordRefundWebhook.sendAsync(staff.getName(), target.getName(), logType, backupTs);
+                        }
                     });
                 } else {
                     OfflineRestoreManager.scheduleRestore(target, logType, timestamp);
                     staff.sendMessage(MessageData.getPluginPrefix() + "Restore scheduled for " + target.getName() + " - will apply when they join.");
+                    long backupTs = timestamp != null ? timestamp : 0L;
+                    RestoreStatsManager.recordFullRestore(
+                            target.getUniqueId(), staff.getName(), refund, logType, backupTs);
+                    if (refund) {
+                        DiscordRefundWebhook.sendAsync(staff.getName(), target.getName(), logType, backupTs);
+                    }
                 }
             }
         }.runTaskAsynchronously(main);

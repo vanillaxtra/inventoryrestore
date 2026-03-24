@@ -81,7 +81,7 @@ public class MessageData {
     private static String mainInventoryNotOnline;
     private static String mainInventoryButton;
     private static String mainInventoryDisabledButton;
-    private static String shulkerBoxButton;
+    private static String exportStorageButton;
 
     // Ender chest GUI messages
     private static String enderChestRestored;
@@ -152,13 +152,14 @@ public class MessageData {
         setMainInventoryNotOnline(convertColorCodes((String) getDefaultValue("attribute-restore.main-inventory.not-online", "You can't restore %NAME%'s inventory while they are offline.")));
         setMainInventoryButton(convertColorCodes((String) getDefaultValue("attribute-restore.main-inventory.button-name", "&cOverwrite Main Inventory from Backup")));
         setMainInventoryDisabledButton(convertColorCodes((String) getDefaultValue("attribute-restore.main-inventory.button-disabled", "&cYou must enable this option in the configuration")));
-        setShulkerBoxButton(convertColorCodes((String) getDefaultValue("attribute-restore.main-inventory.shulker-box", "&dExport to Shulker Boxes")));
+        setExportStorageButton(convertColorCodes((String) getDefaultValue("attribute-restore.main-inventory.export-to-storage",
+                "&eExport to Storage\\n&7Chests, shulkers, barrels, bundles, or drop")));
 
         // Ender chest gui
         setEnderChestRestored(convertColorCodes((String) getDefaultValue("attribute-restore.ender-chest.restored", "%NAME%'s ender chest has been restored.")));
         setEnderChestRestoredPlayer(convertColorCodes((String) getDefaultValue("attribute-restore.ender-chest.restored-player", "Your ender chest has been restored by %NAME%.")));
         setEnderChestNotOnline(convertColorCodes((String) getDefaultValue("attribute-restore.ender-chest.not-online", "You can't restore %NAME%'s ender chest while they are offline.")));
-        setEnderChestButton(convertColorCodes((String) getDefaultValue("attribute-restore.ender-chest.button-name", "&dRestore Ender Chest")));
+        setEnderChestButton(convertColorCodes((String) getDefaultValue("attribute-restore.ender-chest.button-name", "&6Restore Ender Chest")));
 
         // HP gui
         setHealthRestored(convertColorCodes((String) getDefaultValue("attribute-restore.health.restored", "%NAME%'s health has been restored.")));
@@ -170,13 +171,13 @@ public class MessageData {
         setHungerRestored(convertColorCodes((String) getDefaultValue("attribute-restore.hunger.restored", "%NAME%'s hunger has been restored.")));
         setHungerRestoredPlayer(convertColorCodes((String) getDefaultValue("attribute-restore.hunger.restored-player", "Your hunger has been restored by %NAME%.")));
         setHungerNotOnline(convertColorCodes((String) getDefaultValue("attribute-restore.hunger.not-online", "You can't restore %NAME%'s hunger while they are offline.")));
-        setHungerButton(convertColorCodes((String) getDefaultValue("attribute-restore.hunger.button-name", "&cRestore Food")));
+        setHungerButton(convertColorCodes((String) getDefaultValue("attribute-restore.hunger.button-name", "&6Restore Food")));
 
         // XP gui
         setExperienceRestored(convertColorCodes((String) getDefaultValue("attribute-restore.experience.restored", "%NAME%'s XP has been set to level %XP%.")));
         setExperienceRestoredPlayer(convertColorCodes((String) getDefaultValue("attribute-restore.experience.restored-player", "Your XP has been restored to level %XP% by %NAME%.")));
         setExperienceNotOnlinePlayer(convertColorCodes((String) getDefaultValue("attribute-restore.experience.not-online", "You can't restore %NAME%'s experience while they are offline.")));
-        setExperienceButton(convertColorCodes((String) getDefaultValue("attribute-restore.experience.button-name", "&2Restore Player XP")));
+        setExperienceButton(convertColorCodes((String) getDefaultValue("attribute-restore.experience.button-name", "&eRestore Player XP")));
         setExperienceButtonLore(convertColorCodes((String) getDefaultValue("attribute-restore.experience.button-lore", "&rLevel %XP%")));
 
         // Death only gui
@@ -191,7 +192,7 @@ public class MessageData {
         setDeathLocationInvalidWorldError(convertColorCodes((String) getDefaultValue("death-location.invalid-world", "The world %WORLD% is not currently loaded on the server.")));
 
         // Generic gui buttons
-        setMainMenuButton(convertColorCodes((String) getDefaultValue("menu-buttons.main-menu", "&fMain Menu")));
+        setMainMenuButton(convertColorCodes((String) getDefaultValue("menu-buttons.main-menu", "&e« Back to player")));
         setNextPageButton(convertColorCodes((String) getDefaultValue("menu-buttons.next-page", "&fNext Page")));
         setPreviousPageButton(convertColorCodes((String) getDefaultValue("menu-buttons.previous-page", "&fPrevious Page")));
         setBackButton(convertColorCodes((String) getDefaultValue("menu-buttons.back-page", "&fBack")));
@@ -279,8 +280,14 @@ public class MessageData {
         mainInventoryDisabledButton = message;
     }
 
+    public static void setExportStorageButton(String message) {
+        exportStorageButton = message;
+    }
+
+    /** @deprecated use {@link #setExportStorageButton(String)} */
+    @Deprecated
     public static void setShulkerBoxButton(String message) {
-        shulkerBoxButton = message;
+        exportStorageButton = message;
     }
 
     public static void setEnderChestRestored(String message) {
@@ -487,8 +494,14 @@ public class MessageData {
         return mainInventoryDisabledButton;
     }
 
+    public static String getExportStorageButton() {
+        return exportStorageButton;
+    }
+
+    /** @deprecated use {@link #getExportStorageButton()} */
+    @Deprecated
     public static String getShulkerBoxButton() {
-        return shulkerBoxButton;
+        return exportStorageButton;
     }
 
     public static String getEnderChestRestored(String name) {

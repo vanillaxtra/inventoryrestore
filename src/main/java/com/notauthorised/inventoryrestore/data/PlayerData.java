@@ -94,6 +94,20 @@ public class PlayerData {
         return 0;
     }
 
+    /** Newest backup in this log category, formatted, or {@code null} if none. */
+    public String getNewestBackupTimeFormatted() {
+        List<Long> stamps = getSelectedPageTimestamps(1);
+        if (stamps.isEmpty()) return null;
+        return getTime(stamps.get(0));
+    }
+
+    /** Epoch ms of newest backup in this category, or 0 if none. */
+    public long getNewestBackupTimestamp() {
+        List<Long> stamps = getSelectedPageTimestamps(1);
+        if (stamps.isEmpty()) return 0L;
+        return stamps.get(0);
+    }
+
     public List<Long> getSelectedPageTimestamps(int pageNumber) {
         List<Long> timeStamps = new ArrayList<>();
 

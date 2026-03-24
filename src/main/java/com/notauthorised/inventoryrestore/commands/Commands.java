@@ -17,7 +17,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 
     private InventoryRestore main;
 
-    private String[] defaultOptions = new String[] {"restore", "forcebackup", "enable", "disable", "reload", "version", "import", "help"};
+    private String[] defaultOptions = new String[] {"restore", "refund", "forcebackup", "enable", "disable", "reload", "version", "import", "help"};
     private String[] backupOptions = new String[] {"all", "player"};
     private String[] importOptions = new String[] {"confirm"};
 
@@ -26,6 +26,7 @@ public class Commands implements CommandExecutor, TabCompleter {
     public Commands(InventoryRestore mainIn) {
         this.main = mainIn;
         this.subCommands.put("restore", new RestoreSubCmd(mainIn));
+        this.subCommands.put("refund", new RefundSubCmd(mainIn));
         this.subCommands.put("enable", new EnableSubCmd(mainIn));
         this.subCommands.put("disable", new DisableSubCmd(mainIn));
         this.subCommands.put("reload", new ReloadSubCmd(mainIn));
@@ -75,6 +76,10 @@ public class Commands implements CommandExecutor, TabCompleter {
                     commandSender.hasPermission("inventoryrestore.import")
             ) {
                 opts = this.importOptions;
+
+            } else if ((args[0].equalsIgnoreCase("restore") && commandSender.hasPermission("inventoryrestore.viewbackups"))
+                    || (args[0].equalsIgnoreCase("refund") && commandSender.hasPermission("inventoryrestore.refund"))) {
+                return RestoreRefundAliasCommands.matchOfflineNames(args[1]);
 
             } else {
                 opts = null;

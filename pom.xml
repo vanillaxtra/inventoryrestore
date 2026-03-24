@@ -42,7 +42,7 @@
             <url>https://jitpack.io</url>
         </repository>
         <repository>
-            <id>tcoded-releases</id>
+            <id>lightlibs-bukkit-version</id>
             <url>https://repo.tcoded.com/releases/</url>
         </repository>
     </repositories>

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -12,6 +13,8 @@ import com.notauthorised.inventoryrestore.config.MessageData;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.gui.Buttons;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
+
+import java.util.Collections;
 
 public class MainMenu {
 
@@ -27,9 +30,17 @@ public class MainMenu {
     private List<Player> onlinePlayers;
     private Inventory inventory;
 
+    /** When true (e.g. /restore), heads use each player's username; when false (e.g. /refund), a generic label is used. */
+    private final boolean showUsernameOnHeads;
+
     public MainMenu(Player staff, int pageNumber) {
+        this(staff, pageNumber, true);
+    }
+
+    public MainMenu(Player staff, int pageNumber, boolean showUsernameOnHeads) {
         this.staff = staff;
         this.pageNumber = pageNumber;
+        this.showUsernameOnHeads = showUsernameOnHeads;
         this.buttons = new Buttons(staff.getUniqueId());
 
         getPlayerHeadData();
@@ -59,7 +70,13 @@ public class MainMenu {
             Player player = onlinePlayers.get(selection);
             Buttons playerButton = new Buttons(player);
 
-            inventory.setItem(i, playerButton.playerHead(null, true));
+            String titleOverride = showUsernameOnHeads
+                    ? null
+                    : ChatColor.DARK_GREEN + "" + ChatColor.BOLD + "Select";
+            inventory.setItem(i, playerButton.playerHead(
+                    Collections.singletonList(ChatColor.DARK_GRAY + "View inventory backups"),
+                    true,
+                    titleOverride));
             selection++;
         }
 

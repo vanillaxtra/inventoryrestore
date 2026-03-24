@@ -5,9 +5,16 @@ import com.notauthorised.inventoryrestore.InventoryRollback;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import org.bukkit.Material;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.logging.Level;
 
@@ -113,6 +120,12 @@ public class ConfigData {
     private static boolean bStatsEnabled;
     private static boolean debugEnabled;
 
+    private static boolean refundWebhookEnabled;
+    private static String refundWebhookUrl;
+
+    /** Materials never written into backups (main, armour, offhand, ender). */
+    private static Set<Material> backupIgnoredMaterials = Collections.emptySet();
+
     public void setVariables() {		
         setEnabled((boolean) getDefaultValue("enabled", true));
 
@@ -172,8 +185,37 @@ public class ConfigData {
         setbStatsEnabled((boolean) getDefaultValue("bStats", true));
         setDebugEnabled((boolean) getDefaultValue("debug", false));
 
+        setRefundWebhookEnabled((boolean) getDefaultValue("refund-webhook.enabled", false));
+        setRefundWebhookUrl((String) getDefaultValue("refund-webhook.url", ""));
+
+        reloadBackupIgnoreMaterials();
+
         if (saveChanges())
             saveConfig();
+    }
+
+    private void reloadBackupIgnoreMaterials() {
+        List<String> raw = configuration.getStringList("backup-ignore-materials");
+        if (!configuration.contains("backup-ignore-materials")) {
+            configuration.set("backup-ignore-materials", Collections.emptyList());
+            saveChanges = true;
+            raw = Collections.emptyList();
+        }
+        Set<Material> mats = new HashSet<>();
+        for (String name : raw) {
+            if (name == null || name.trim().isEmpty()) continue;
+            try {
+                mats.add(Material.valueOf(name.trim().toUpperCase(Locale.ROOT).replace(' ', '_')));
+            } catch (IllegalArgumentException ex) {
+                InventoryRollback.getInstance().getLogger().warning("[InventoryRestore] Unknown material in backup-ignore-materials: " + name);
+            }
+        }
+        backupIgnoredMaterials = Collections.unmodifiableSet(mats);
+    }
+
+    public static boolean isBackupIgnoredMaterial(Material material) {
+        if (material == null) return false;
+        return backupIgnoredMaterials.contains(material);
     }
 
     public static void setEnabled(boolean enabled) {        
@@ -490,6 +532,22 @@ public class ConfigData {
 
     public static boolean isDebugEnabled() {
         return debugEnabled;
+    }
+
+    public static boolean isRefundWebhookEnabled() {
+        return refundWebhookEnabled;
+    }
+
+    public static String getRefundWebhookUrl() {
+        return refundWebhookUrl;
+    }
+
+    private static void setRefundWebhookEnabled(boolean v) {
+        refundWebhookEnabled = v;
+    }
+
+    private static void setRefundWebhookUrl(String v) {
+        refundWebhookUrl = v != null ? v : "";
     }
 
     private boolean saveChanges = false;

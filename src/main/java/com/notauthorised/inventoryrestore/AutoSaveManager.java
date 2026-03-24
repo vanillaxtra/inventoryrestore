@@ -20,7 +20,7 @@ public class AutoSaveManager {
     public void start() {
         if (task != null) return;
 
-        int intervalTicks = ConfigData.getAutosaveIntervalSeconds() * 20; // 20 ticks per second
+        int intervalTicks = Math.max(20, ConfigData.getAutosaveIntervalSeconds() * 20);
 
         task = new BukkitRunnable() {
             @Override
@@ -29,18 +29,17 @@ public class AutoSaveManager {
                     cancel();
                     return;
                 }
+                // Crash recovery: snapshot every online player (not gated on leavesave — that perm is for join/quit backups only).
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
-                    if (player.hasPermission("inventoryrestore.leavesave")) {
-                        SaveInventory saveInv = new SaveInventory(player, LogType.QUIT, null, null);
-                        SaveInventory.PlayerDataSnapshot snapshot = saveInv.createSnapshot(player.getInventory(), player.getEnderChest());
-                        if (snapshot != null) {
-                            java.util.UUID uuid = player.getUniqueId();
-                            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> YAML.saveAutosave(uuid, snapshot));
-                        }
+                    SaveInventory saveInv = new SaveInventory(player, LogType.QUIT, null, null);
+                    SaveInventory.PlayerDataSnapshot snapshot = saveInv.createSnapshot(player.getInventory(), player.getEnderChest());
+                    if (snapshot != null) {
+                        java.util.UUID uuid = player.getUniqueId();
+                        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> YAML.saveAutosave(uuid, snapshot));
                     }
                 }
             }
-        }.runTaskTimer(plugin, intervalTicks, intervalTicks);
+        }.runTaskTimer(plugin, 20L, intervalTicks);
     }
 
     public void stop() {

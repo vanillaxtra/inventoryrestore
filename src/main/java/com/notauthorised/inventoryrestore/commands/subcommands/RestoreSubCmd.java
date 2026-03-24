@@ -5,6 +5,7 @@ import com.notauthorised.inventoryrestore.commands.IRPCommand;
 import com.notauthorised.inventoryrestore.InventoryRollback;
 import com.notauthorised.inventoryrestore.config.ConfigData;
 import com.notauthorised.inventoryrestore.config.MessageData;
+import com.notauthorised.inventoryrestore.data.RestoreSession;
 import com.notauthorised.inventoryrestore.gui.menu.MainMenu;
 import com.notauthorised.inventoryrestore.gui.menu.PlayerMenu;
 import org.bukkit.Bukkit;
@@ -41,7 +42,7 @@ public class RestoreSubCmd extends IRPCommand {
 
     @SuppressWarnings("deprecation")
     private void openBackupMenu(CommandSender sender, Player staff, String[] args) {
-        if (args.length <= 0 || args.length == 1) {
+        if (args.length <= 1) {
             try {
                 openMainMenu(staff);
             } catch (NullPointerException ignored) {}
@@ -87,6 +88,7 @@ public class RestoreSubCmd extends IRPCommand {
     }
 
     private void openMainMenu(Player staff) {
+        RestoreSession.clear(staff.getUniqueId());
         MainMenu menu = new MainMenu(staff, 1);
 
         staff.openInventory(menu.getInventory());
@@ -94,7 +96,8 @@ public class RestoreSubCmd extends IRPCommand {
     }
 
     private void openPlayerMenu(Player staff, OfflinePlayer offlinePlayer) {
-        PlayerMenu menu = new PlayerMenu(staff, offlinePlayer);
+        RestoreSession.setRefundContext(staff.getUniqueId(), false);
+        PlayerMenu menu = new PlayerMenu(staff, offlinePlayer, false);
 
         staff.openInventory(menu.getInventory());
         Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), menu::getPlayerMenu);

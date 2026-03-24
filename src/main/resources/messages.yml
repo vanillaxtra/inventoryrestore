@@ -24,6 +24,7 @@ attribute-restore:
     not-online: 'You can''t restore %NAME%''s inventory while they are offline.'
     button-name: '&cOVERWRITE Inventory from Backup'
     button-disabled: '&cSingle click restore is disabled\n&cin the config.yml file!'
+    export-to-storage: '&eExport to Storage\n&7Chests, shulkers, barrels, bundles, or drop'
   ender-chest:
     restored: '%NAME%''s ender chest has been restored.'
     restored-player: 'Your ender chest has been restored by %NAME% from backup.'
@@ -38,7 +39,7 @@ attribute-restore:
     restored: '%NAME%''s hunger has been restored.'
     restored-player: 'Your hunger has been restored by %NAME% from backup.'
     not-online: 'You can''t restore %NAME%''s hunger while they are offline.'
-    button-name: '&cRestore Food'
+    button-name: '&6Restore Food'
   experience:
     restored: '%NAME%''s XP has been set to level %XP%.'
     restored-player: 'Your XP has been restored to level %XP% by %NAME% from backup.'
@@ -58,7 +59,7 @@ death-location:
   invalid-world: 'The world %WORLD% is not currently loaded on the server.'
 
 menu-buttons:
-  main-menu: '&fMain Menu'
+  main-menu: '&e« Back to player'
   next-page: '&fNext Page'
   previous-page: '&fPrevious Page'
   back-page: '&fBack'

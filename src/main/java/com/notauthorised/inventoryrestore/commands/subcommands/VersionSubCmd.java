@@ -34,13 +34,12 @@ public class VersionSubCmd extends IRPCommand {
                 .append("\n");
 
         strb.append(ChatColor.WHITE)
-            .append("Authors:").append("\n")
+            .append("Author:").append("\n")
             .append(ChatColor.GRAY)
-            .append("  - Maintained/updated by: TechnicallyCoded").append("\n")
-            .append("  - Original author: danjono").append("\n")
+            .append("  notauthorised").append("\n")
             .append("\n")
             .append(ChatColor.WHITE).append("Update link:").append("\n")
-            .append(ChatColor.BLUE).append(ChatColor.ITALIC).append("  https://www.spigotmc.org/resources/inventoryrollback-plus.85811/");
+            .append(ChatColor.BLUE).append(ChatColor.ITALIC).append("  https://www.spigotmc.org/resources/inventoryrestore.85811/");
 
 
         // Send

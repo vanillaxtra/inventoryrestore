@@ -17,6 +17,14 @@ commands:
     description: ${project.description}
     usage: /ir <subcommand>
     aliases: [ir]
+  restore:
+    description: Open the inventory restore GUI (optional player name).
+    usage: /restore [player]
+    permission: inventoryrestore.viewbackups
+  refund:
+    description: Open the refund GUI with ledger and optional Discord webhook.
+    usage: /refund [player]
+    permission: inventoryrestore.refund
 
 permissions:
   inventoryrestore.*:
@@ -36,6 +44,7 @@ permissions:
       inventoryrestore.help: true
       inventoryrestore.adminalerts: true
       inventoryrestore.viewbackups: true
+      inventoryrestore.refund: true
     default: op
   inventoryrestore.cmd:
     description: Allows InventoryRestore commands to work.
@@ -84,4 +93,7 @@ permissions:
   inventoryrestore.help:
     description: Get the list of commands and what they do
     default: true
+  inventoryrestore.refund:
+    description: Access refund GUI, ledger, and refund webhook flow
+    default: op
 

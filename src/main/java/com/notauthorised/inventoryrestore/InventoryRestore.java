@@ -2,6 +2,8 @@ package com.notauthorised.inventoryrestore;
 
 import com.notauthorised.inventoryrestore.UpdateChecker.UpdateResult;
 import com.notauthorised.inventoryrestore.commands.Commands;
+import com.notauthorised.inventoryrestore.commands.RestoreRefundAliasCommands;
+import com.notauthorised.inventoryrestore.data.RestoreStatsManager;
 import com.notauthorised.inventoryrestore.util.TimeZoneUtil;
 import com.notauthorised.inventoryrestore.util.test.SelfTestSerialization;
 import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
@@ -57,6 +59,8 @@ public class InventoryRestore extends InventoryRollback {
         configData = new ConfigData();
         configData.setVariables(); // requires TimeZoneUtil
 
+        RestoreStatsManager.init();
+
         // Init NMS
         String serverVersion = this.getServer().getVersion();
         getLogger().info("Attempting support for version: " + serverVersion);
@@ -94,11 +98,23 @@ public class InventoryRestore extends InventoryRollback {
         if (ConfigData.isbStatsEnabled()) initBStats();
 
         // Commands
-        PluginCommand plCmd = getCommand("inventoryrestore");
         Commands cmds = new Commands(this);
+        PluginCommand plCmd = getCommand("inventoryrestore");
         if (plCmd != null) {
             plCmd.setExecutor(cmds);
             plCmd.setTabCompleter(cmds);
+        }
+        RestoreRefundAliasCommands.RestoreAlias restoreAlias = new RestoreRefundAliasCommands.RestoreAlias();
+        PluginCommand restoreCmd = getCommand("restore");
+        if (restoreCmd != null) {
+            restoreCmd.setExecutor(restoreAlias);
+            restoreCmd.setTabCompleter(restoreAlias);
+        }
+        RestoreRefundAliasCommands.RefundAlias refundAlias = new RestoreRefundAliasCommands.RefundAlias();
+        PluginCommand refundCmd = getCommand("refund");
+        if (refundCmd != null) {
+            refundCmd.setExecutor(refundAlias);
+            refundCmd.setTabCompleter(refundAlias);
         }
 
         // Events

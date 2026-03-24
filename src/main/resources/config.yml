@@ -79,6 +79,15 @@ restore-to-player-button: true
 ## Change this to 'false' to ignore saving if the player's inventory is empty
 save-empty-inventories: true
 
+## Materials (Bukkit names) excluded from backups — not stored. Example: [DIRT, STONE]
+## Empty list = nothing ignored.
+backup-ignore-materials: []
+
+## Discord webhook when a full restore is confirmed from the /refund GUI (optional).
+refund-webhook:
+  enabled: false
+  url: ''
+
 ## Autosave: saves online players every N seconds. On planned shutdown, autosaves are deleted.
 ## If server crashes, autosaves are recovered to the crashes section.
 autosave-enabled: true

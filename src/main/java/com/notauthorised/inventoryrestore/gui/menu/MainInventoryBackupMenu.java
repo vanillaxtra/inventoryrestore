@@ -20,7 +20,7 @@ import java.util.concurrent.Future;
 
 public class MainInventoryBackupMenu {
 
-	public static final int GIVE_SHULKERS_BUTTON_SLOT = 47;
+	public static final int EXPORT_STORAGE_BUTTON_SLOT = 47;
 	private final InventoryRestore main;
 
 	private final Player staff;
@@ -70,9 +70,9 @@ public class MainInventoryBackupMenu {
 	    //Add back button
         inventory.setItem(45, buttons.inventoryMenuBackButton(MessageData.getBackButton(), logType, timestamp));
 
-		// Add get shulker button
+		// Export backup to storage (shulker, barrel, chest, bundle, drop)
 		if (main.getVersion().greaterOrEqThan(MCVersion.v1_11.toBukkitVersion()))
-			inventory.setItem(GIVE_SHULKERS_BUTTON_SLOT, buttons.giveShulkerBox(logType, timestamp));
+			inventory.setItem(EXPORT_STORAGE_BUTTON_SLOT, buttons.giveExportStorageButton(logType, timestamp));
 
 		// Add restore all player inventory button
 		if (ConfigData.isRestoreToPlayerButton())

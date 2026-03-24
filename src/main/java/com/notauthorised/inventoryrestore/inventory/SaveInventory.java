@@ -1,6 +1,7 @@
 package com.notauthorised.inventoryrestore.inventory;
 
 import com.notauthorised.inventoryrestore.InventoryRestore;
+import com.notauthorised.inventoryrestore.util.BackupIgnoreFilter;
 import com.notauthorised.inventoryrestore.util.UserLogRateLimiter;
 import com.notauthorised.inventoryrestore.util.serialization.ItemStackSerialization;
 import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
@@ -163,6 +164,11 @@ public class SaveInventory {
         double locX = ((int)(pLoc.getX() * 10)) / 10d;
         double locY = ((int)(pLoc.getY() * 10)) / 10d;
         double locZ = ((int)(pLoc.getZ() * 10)) / 10d;
+
+        if (mainInvContents != null) mainInvContents = BackupIgnoreFilter.filterArray(mainInvContents);
+        if (mainInvArmor != null) mainInvArmor = BackupIgnoreFilter.filterArray(mainInvArmor);
+        if (enderInvContents != null) enderInvContents = BackupIgnoreFilter.filterArray(enderInvContents);
+        if (offhand != null) offhand = BackupIgnoreFilter.filterSingle(offhand);
 
         // Final vars
         ItemStack[] finalMainInvContents = mainInvContents;
