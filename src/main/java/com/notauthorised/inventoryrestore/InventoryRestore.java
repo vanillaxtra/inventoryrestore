@@ -3,6 +3,7 @@ package com.notauthorised.inventoryrestore;
 import com.notauthorised.inventoryrestore.UpdateChecker.UpdateResult;
 import com.notauthorised.inventoryrestore.commands.Commands;
 import com.notauthorised.inventoryrestore.commands.RestoreRefundAliasCommands;
+import com.notauthorised.inventoryrestore.data.BackupActivityTracker;
 import com.notauthorised.inventoryrestore.data.RestoreStatsManager;
 import com.notauthorised.inventoryrestore.util.TimeZoneUtil;
 import com.notauthorised.inventoryrestore.util.test.SelfTestSerialization;
@@ -60,6 +61,7 @@ public class InventoryRestore extends InventoryRollback {
         configData.setVariables(); // requires TimeZoneUtil
 
         RestoreStatsManager.init();
+        BackupActivityTracker.init();
 
         // Init NMS
         String serverVersion = this.getServer().getVersion();
@@ -81,7 +83,7 @@ public class InventoryRestore extends InventoryRollback {
 
         // Storage Init & Update checker
         super.startupTasks();
-
+            
         // Ensure autosave/crash folders exist (even when using MySQL)
         YAML.ensureAutosaveFoldersExist();
 

@@ -12,7 +12,8 @@ public enum InventoryName {
 	MAIN_BACKUP("Main Inventory Backup", 54),
     ENDER_CHEST_BACKUP("Ender Chest Backup", 36),
 	OVERWRITE_WARNING("Overwrite Warning", 54),
-	EXPORT_STORAGE("Export to Storage", 27);
+	EXPORT_STORAGE("Export to Storage", 27),
+	BACKUP_ACTIVITY("Backup activity", 45);
 	
 	private final String menuName;
 	private final int size;

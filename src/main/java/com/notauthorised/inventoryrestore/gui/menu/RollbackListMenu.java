@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -16,6 +17,7 @@ import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
+import com.notauthorised.inventoryrestore.util.RelativeTime;
 
 public class RollbackListMenu {
 
@@ -91,13 +93,20 @@ public class RollbackListMenu {
 
                 playerData.getRollbackMenuData();
 
-                String displayName = MessageData.getDeathTime(PlayerData.getTime(timestamp));
+                String when = PlayerData.getTime(timestamp);
+                String displayName = MessageData.getDeathTime(when + ChatColor.DARK_GRAY + " (" + RelativeTime.ago(timestamp) + ")");
 
                 List<String> lore = new ArrayList<>();
 
                 String deathReason = playerData.getDeathReason();
-                if (deathReason != null)
-                    lore.add(MessageData.getDeathReason(deathReason));
+                String reasonText = deathReason != null && !deathReason.isEmpty()
+                        ? deathReason
+                        : (logType == LogType.DEATH ? "Unknown" : logType.name());
+                lore.add(MessageData.getDeathReason(reasonText));
+                for (int start = 45; start < reasonText.length(); start += 45) {
+                    int end = Math.min(reasonText.length(), start + 45);
+                    lore.add(ChatColor.GRAY + reasonText.substring(start, end));
+                }
 
                 String world = playerData.getWorld();
                 double x = playerData.getX();
@@ -105,10 +114,8 @@ public class RollbackListMenu {
                 double z = playerData.getZ();
                 String location = world + "," + x + "," + y + "," + z;
 
-                lore.add(MessageData.getDeathLocationWorld(world));
-                lore.add(MessageData.getDeathLocationX(x));
-                lore.add(MessageData.getDeathLocationY(y));
-                lore.add(MessageData.getDeathLocationZ(z));
+                if (world != null && !world.isEmpty())
+                    lore.add(MessageData.getDeathLocationWorld(world));
 
                 ItemStack item = buttons.createInventoryButton(new ItemStack(Material.CHEST), logType, location, timestamp, displayName, lore);
 

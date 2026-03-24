@@ -15,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -32,7 +31,6 @@ public class OverwriteWarningMenu {
     private final LogType logType;
     private final Long timestamp;
     private Inventory inventory;
-    private BukkitRunnable refreshTask;
 
     public OverwriteWarningMenu(Player staff, OfflinePlayer target, LogType logType, Long timestamp) {
         this.main = InventoryRestore.getInstance();
@@ -84,9 +82,13 @@ public class OverwriteWarningMenu {
         ItemStack warnItem = new ItemStack(Material.YELLOW_BANNER);
         ItemMeta warnMeta = warnItem.getItemMeta();
         if (warnMeta != null) {
-            warnMeta.setDisplayName(ChatColor.YELLOW + "Current inventory (live):");
-            warnMeta.setLore(Collections.singletonList(
-                    target.isOnline() ? ChatColor.WHITE + "Updating every second" : ChatColor.GRAY + "Player offline - restore will apply on next login"));
+            if (target.isOnline()) {
+                warnMeta.setDisplayName(ChatColor.YELLOW + "Their inventory now");
+                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Confirm still applies the backup"));
+            } else {
+                warnMeta.setDisplayName(ChatColor.YELLOW + "Player offline");
+                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Restore when they join"));
+            }
             warnItem.setItemMeta(warnMeta);
         }
         inventory.setItem(46, warnItem);
@@ -99,8 +101,9 @@ public class OverwriteWarningMenu {
         if (target.isOnline()) {
             Player p = (Player) target;
             ItemStack[] contents = p.getInventory().getContents();
-            for (int i = 0; i < Math.min(36, contents.length); i++) {
-                inventory.setItem(i, contents[i] != null ? contents[i].clone() : null);
+            for (int i = 0; i < 36; i++) {
+                ItemStack it = i < contents.length ? contents[i] : null;
+                inventory.setItem(i, it != null ? it.clone() : null);
             }
         } else {
             for (int i = 0; i < 36; i++) {
@@ -109,34 +112,18 @@ public class OverwriteWarningMenu {
             inventory.setItem(13, new ItemStack(Material.BARRIER));
             ItemMeta meta = inventory.getItem(13).getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.RED + "Player Offline");
-                meta.setLore(Collections.singletonList(ChatColor.GRAY + "Restore will apply when they join"));
+                meta.setDisplayName(ChatColor.RED + "Offline");
+                meta.setLore(Collections.singletonList(ChatColor.GRAY + "Inventory not shown"));
                 inventory.getItem(13).setItemMeta(meta);
             }
         }
     }
 
+    /** No periodic refresh so staff can pull items from the preview without copies respawning. */
     public void startLiveRefresh() {
-        if (refreshTask != null) refreshTask.cancel();
-        if (!target.isOnline()) return;
-        refreshTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!staff.isOnline() || !inventory.getViewers().contains(staff)) {
-                    cancel();
-                    return;
-                }
-                refreshInventoryDisplay();
-            }
-        };
-        refreshTask.runTaskTimer(main, 20, 20);
     }
 
     public void stopRefresh() {
-        if (refreshTask != null) {
-            refreshTask.cancel();
-            refreshTask = null;
-        }
     }
 
     public Inventory getInventory() {

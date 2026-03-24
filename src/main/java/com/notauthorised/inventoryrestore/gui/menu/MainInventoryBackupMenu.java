@@ -4,16 +4,23 @@ import com.notauthorised.inventoryrestore.InventoryRestore;
 import com.tcoded.lightlibs.bukkitversion.MCVersion;
 import com.notauthorised.inventoryrestore.config.ConfigData;
 import com.notauthorised.inventoryrestore.config.MessageData;
+import com.notauthorised.inventoryrestore.customdata.CustomDataItemEditor;
+import com.notauthorised.inventoryrestore.data.BackupActivityTracker;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -21,6 +28,13 @@ import java.util.concurrent.Future;
 public class MainInventoryBackupMenu {
 
 	public static final int EXPORT_STORAGE_BUTTON_SLOT = 47;
+	public static final int ACTIVITY_BOOK_SLOT = 53;
+	public static final String NBT_OPEN_BACKUP_ACTIVITY = "openBackupActivity";
+
+	/** Main grid + armor/offhand column (not the bottom button row). */
+	public static boolean isEditablePreviewSlot(int rawSlot) {
+		return (rawSlot >= 0 && rawSlot <= 35) || (rawSlot >= 40 && rawSlot <= 44);
+	}
 	private final InventoryRestore main;
 
 	private final Player staff;
@@ -91,6 +105,26 @@ public class MainInventoryBackupMenu {
 
 		//Add Experience Bottle
 		inventory.setItem(52, buttons.experiencePotion(logType, xp));
+
+		int viewCount = BackupActivityTracker.countViews(playerUUID, logType, timestamp);
+		int restoreCount = BackupActivityTracker.countRestores(playerUUID, logType, timestamp);
+		ItemStack activityBook = new ItemStack(Material.WRITTEN_BOOK);
+		ItemMeta actMeta = activityBook.getItemMeta();
+		if (actMeta != null) {
+			actMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "Backup activity");
+			List<String> actLore = new ArrayList<>();
+			actLore.add(ChatColor.GRAY + "Full restores: " + ChatColor.WHITE + restoreCount);
+			actLore.add(ChatColor.GRAY + "Times viewed: " + ChatColor.WHITE + viewCount);
+			actLore.add(ChatColor.DARK_GRAY + "Click: who opened / who restored");
+			actMeta.setLore(actLore);
+			activityBook.setItemMeta(actMeta);
+		}
+		CustomDataItemEditor actEd = CustomDataItemEditor.editItem(activityBook);
+		actEd.setString(NBT_OPEN_BACKUP_ACTIVITY, "1");
+		actEd.setString("uuid", playerUUID.toString());
+		actEd.setString("logType", logType.name());
+		actEd.setLong("timestamp", timestamp);
+		inventory.setItem(ACTIVITY_BOOK_SLOT, actEd.setItemData());
 	}
 	
 	public Inventory getInventory() {
