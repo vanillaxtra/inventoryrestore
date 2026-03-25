@@ -44,6 +44,9 @@ public class InventoryRestore extends InventoryRollback {
 
     private AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
+    /** bStats service id — https://bstats.org/plugin/bukkit/inventory-restore/30407 */
+    private static final int BSTATS_SERVICE_ID = 30407;
+
     public static InventoryRestore getInstance() {
         return instance;
     }
@@ -220,7 +223,7 @@ public class InventoryRestore extends InventoryRollback {
 
     @Override
     public void bStats() {
-        Metrics metrics = new Metrics(this,  	9437);
+        Metrics metrics = new Metrics(this, BSTATS_SERVICE_ID);
 
         if (ConfigData.isbStatsEnabled())
             InventoryRestore.getInstance().getConsoleSender().sendMessage(MessageData.getPluginPrefix() + "bStats are enabled");

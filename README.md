@@ -40,9 +40,28 @@ backup-ignore-materials: []
 
 ### Staff GUIs
 
+![Main menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/mainmenu.png)
+
 - **Main menu** — browse players (restore mode shows names; refund mode can hide names for privacy).
+
+![Player / restore menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoremenu.png)
+
 - **Player menu** — choose backup category (join, quit, death, world change, force, crash).
+
+| Joins | Quits | Deaths |
+|-------|-------|--------|
+| ![Joins backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/joins.png) | ![Quits backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/quits.png) | ![Death backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/deaths.png) |
+
+| World changes | Force saves | Crashes |
+|---------------|-------------|---------|
+| ![World change backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/worldchanges.png) | ![Force saves](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/forcesaves.png) | ![Crash backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/crashes.png) |
+
+![Rollback list](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/rollbacklist.png)
+
 - **Rollback list** — paginated list of snapshots with timestamps (timezone/format configurable).
+
+![Main inventory backup menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/backupmenu.png)
+
 - **Main inventory backup** — full **36-slot preview**, **armor & off-hand** in the same layout as vanilla, plus actions:
   - Restore main inventory + armor + off-hand (with **overwrite warning** when the target still has items; skipped if their inventory is **completely empty** when detectable).
   - **Ender chest** backup view and restore.
@@ -51,6 +70,28 @@ backup-ignore-materials: []
   - **Export to storage** (extract items for manual handling).
   - **Backup activity** — who opened or restored a snapshot (audit trail).
 - **Overwrite warning** — shows the target’s **current** inventory (or last saved layout offline) including **armor & off-hand** before confirming a full restore.
+
+#### Screenshots — restore actions & tools
+
+| Teleport to backup coords | Ender chest (1) | Ender chest (2) |
+|---------------------------|-----------------|-----------------|
+| ![Restore coords](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorecoords.png) | ![Ender chest restore 1](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoreenderchest1.png) | ![Ender chest restore 2](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoreenderchest2.png) |
+
+| Restore food | Restore XP | Restore offline |
+|--------------|------------|-----------------|
+| ![Restore food](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorefood.png) | ![Restore XP](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorexp.png) | ![Restore offline](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoreoffline.png) |
+
+| Export (chest) | Export (bundle) |
+|----------------|-----------------|
+| ![Export chest](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/exportchest.png) | ![Export bundle](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/exportbundle.png) |
+
+![Backup activity](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/backupactivity.png)
+
+![Overwrite warning](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/overwritewarning.png)
+
+| Refund / restore history (1) | Refund / restore history (2) |
+|------------------------------|------------------------------|
+| ![Restore history 1](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorehistory1.png) | ![Restore history 2](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorehistory2.png) |
 
 ### Commands & safety
 
@@ -116,4 +157,7 @@ Full permission tree is in **`plugin.yml`**.
 ---
 
 ## 📊 bStats
-[![bStats: servers using death-bans](https://bstats.org/signatures/bukkit/deathbans.svg)](https://bstats.org/plugin/bukkit/deathbans/30324)
+
+[![bStats](https://img.shields.io/badge/bStats-inventory--restore-6366f1?style=flat-square)](https://bstats.org/plugin/bukkit/inventory-restore/30407)
+
+Anonymous usage metrics help gauge adoption and environments. Disable in `config.yml` with `bStats: false`.
