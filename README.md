@@ -1,54 +1,119 @@
 # InventoryRestore
 
-### Introduction
+[![Discord](https://img.shields.io/discord/1480618281189773314?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/qdmSv7usbJ)
+[![GitHub](https://img.shields.io/badge/GitHub-DeathBan-181717?logo=github)](https://github.com/vanillaxtra/DeathBan)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.13--1.21.x-62B47A)](https://github.com/vanillaxtra/DeathBan)
+[![Folia](https://img.shields.io/badge/Folia-Supported-blue)](https://github.com/vanillaxtra/DeathBan)
 
-**Description**
+**InventoryRestore** backs up player inventories and lets staff inspect, restore, and document refunds—with optional MySQL, crash recovery, autosave, and a Discord webhook for refund confirmations.
 
-InventoryRestore is a plugin which backs up player inventories for various events. Useful if players lose items due to lag, griefing and more!
+---
 
-**When does the plugin backup player inventories?**
+## Features
 
-When a player: Joins, Leaves, Dies, Changes world, or when requested by staff. Also auto-saves every 30 seconds when enabled.
+### Backups & storage
 
-**What does the plugin save?**
+- **Automatic saves** when players **join**, **quit**, **die**, **change worlds**, **crashes**, and on a configurable **autosave** interval
 
-The plugin saves the player's: Inventory, Enderchest, Location, Hunger, XP. (Health restore has been removed.)
+- **Force backup** for one online player or **everyone online** (`/ir forcebackup`).
+- **YAML** (default) or **MySQL** for centralized storage.
+- Per-player limits per save type (`max-saves`: join, quit, death, world-change, force, crash).
+```
+## Maximum saves a backup will hold per type per user.
+max-saves:
+  join: 10
+  quit: 10
+  death: 50
+  world-change: 10
+  force: 10
+  crash: 20
+```
+- **Material ignore list** so chosen items are never stored (`backup-ignore-materials`) this is so that item is not taking up lots of storage for example string if you have a `/string` plugin.
+```
+## Materials (Bukkit names) excluded from backups and not stored. Example: [DIRT, STONE]
+## Empty list = nothing ignored.
+backup-ignore-materials: []
+```
+- **Offline restores & inventory viewing**
 
-**How do I use the plugin?**
+- **Export restores to shulkers, chests, bundles & drop** Incase you dont want to restore someones current inventory you can put chests at their base, put a bundle in their inventory etc.
 
-When a backup is created, it is added to a list of available backups to view and restore.
+### Staff GUIs
 
-Players with the required permission can open a rollback menu by running the command `/ir restore [player]`. You will be presented with all the recent backups. To view a backup just click on the corresponding icon. You can choose to restore what you want or go back to the list of backups.
+- **Main menu** — browse players (restore mode shows names; refund mode can hide names for privacy).
+- **Player menu** — choose backup category (join, quit, death, world change, force, crash).
+- **Rollback list** — paginated list of snapshots with timestamps (timezone/format configurable).
+- **Main inventory backup** — full **36-slot preview**, **armor & off-hand** in the same layout as vanilla, plus actions:
+  - Restore main inventory + armor + off-hand (with **overwrite warning** when the target still has items; skipped if their inventory is **completely empty** when detectable).
+  - **Ender chest** backup view and restore.
+  - **Hunger** and **XP** restore (when target is online).
+  - **Teleport** to saved backup location (permission `inventoryrestore.restore.teleport`).
+  - **Export to storage** (extract items for manual handling).
+  - **Backup activity** — who opened or restored a snapshot (audit trail).
+- **Overwrite warning** — shows the target’s **current** inventory (or last saved layout offline) including **armor & off-hand** before confirming a full restore.
 
-The plugin saves 50 deaths and 10 joins, leaves and world changes by default. Crash recoveries from the 30-second autosave are stored separately. You can change these values in the configuration file.
+### Commands & safety
 
-### Documentation
+- **`/restore`** / **`/ir restore [player|uuid]`** — open restore GUI; supports **UUID** or name tab-complete.
+- **`/refund`** / **`/ir refund [player|uuid]`** — refund GUI + ledger context.
+- **`/ir enable`**, **`/ir disable`**, **`/ir reload`**, **`/ir version`**, **`/ir help`**.
+- **`/ir import confirm`** — one-time migration from legacy backup data (requires **`inventoryrestore.import`**; grant via your permissions plugin if needed).
+- Configurable **death event ordering** vs other plugins (`allow-other-plugins-edit-death-inventory`).
+- **`loadbefore`** several death-chest style plugins to reduce ordering conflicts.
 
-**Commands**
+### Integrations & ops
 
-- `/ir restore [player]` - Open a menu to view all player backups
-- `/ir forcebackup <all/player> [player]` - Create a backup manually
-- `/ir enable` - Enable the plugin
-- `/ir disable` - Disable the plugin
-- `/ir reload` - Reload the configuration file
+- Optional **Discord refund webhook** when a full restore is confirmed from the refund GUI (`refund-webhook` in `config.yml`).
+- **Update checker** on startup (configurable).
+- **Sounds** for restore, teleport, food, hunger, and XP (each togglable).
 
-**Permissions**
+---
 
-- `inventoryrestore.viewbackups` - (Default: OP) Allow /ir restore (without ability to restore)
-- `inventoryrestore.restore` - (Default: OP) Allow restore operations
-- `inventoryrestore.restore.teleport` - (Default: OP) Allow teleport to backup location
-- `inventoryrestore.forcebackup` - (Default: OP) Allow /ir forcebackup
-- `inventoryrestore.enable` - (Default: OP) Allow /ir enable
-- `inventoryrestore.disable` - (Default: OP) Allow /ir disable
-- `inventoryrestore.reload` - (Default: OP) Allow /ir reload
-- `inventoryrestore.adminalerts` - (Default: OP) Admin notifications on join
-- `inventoryrestore.deathsave` - (Default: All) Backup on death
-- `inventoryrestore.joinsave` - (Default: All) Backup on join
-- `inventoryrestore.leavesave` - (Default: All) Backup on leave
-- `inventoryrestore.worldchangesave` - (Default: All) Backup on world change
-- `inventoryrestore.help` - (Default: All) View help
-- `inventoryrestore.version` - (Default: All) View version
+## Commands
 
-### Author
+| Command | Permission | Description |
+|--------|------------|-------------|
+| `/restore [player]` | `inventoryrestore.viewbackups` | Open restore GUI (optional target). |
+| `/refund [player]` | `inventoryrestore.refund` | Open refund GUI. |
+| `/ir restore [player]` | `inventoryrestore.viewbackups` | Same as `/restore`. |
+| `/ir refund [player]` | `inventoryrestore.refund` | Same as `/refund`. |
+| `/ir forcebackup all` | `inventoryrestore.forcebackup` | Force-save all online players. |
+| `/ir forcebackup player <name>` | `inventoryrestore.forcebackup` | Force-save one online player. |
+| `/ir enable` | `inventoryrestore.enable` | Turn plugin on. |
+| `/ir disable` | `inventoryrestore.disable` | Turn plugin off. |
+| `/ir reload` | `inventoryrestore.reload` | Reload config. |
+| `/ir version` | `inventoryrestore.version` | Version info. |
+| `/ir help` | `inventoryrestore.help` | In-game command list. |
+| `/ir import confirm` | `inventoryrestore.import` | Import legacy backups (destructive; confirm only). |
 
-notauthorised
+Child permission **`inventoryrestore.restore.teleport`** — allows teleporting to the backup’s saved world/coords from the GUI.
+
+Full permission tree is in **`plugin.yml`**.
+
+---
+
+## Configuration (`config.yml`)
+
+| Option | What it does |
+|--------|----------------|
+| `enabled` | Master switch. |
+| `max-saves` | Caps per type per player. |
+| `backup-lines-visible` | Rows visible on rollback list (max 5). |
+| `folder-location` | Data path or `DEFAULT`. |
+| `mysql` | Enable DB + pool settings. |
+| `sounds.*.enabled` | Toggle feedback sounds. |
+| `time-zone` / `time-format` | Backup timestamp display. |
+| `allow-other-plugins-edit-death-inventory` | Death save timing vs other plugins. |
+| `restore-to-player-button` | Show full-restore button. |
+| `save-empty-inventories` | Whether empty snapshots are kept. |
+| `backup-ignore-materials` | Bukkit material names to skip. |
+| `refund-webhook` | Discord POST on refund-path full restore. |
+| `autosave-*` | Interval autosave + crash recovery behavior. |
+| `update-checker` | Spigot update notice. |
+| `bStats` | Anonymous metrics (see below). |
+| `debug` | Extra console logging. |
+
+---
+
+## 📊 bStats
+[![bStats: servers using death-bans](https://bstats.org/signatures/bukkit/deathbans.svg)](https://bstats.org/plugin/bukkit/deathbans/30324)

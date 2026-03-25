@@ -79,7 +79,7 @@ restore-to-player-button: true
 ## Change this to 'false' to ignore saving if the player's inventory is empty
 save-empty-inventories: true
 
-## Materials (Bukkit names) excluded from backups — not stored. Example: [DIRT, STONE]
+## Materials (Bukkit names) excluded from backups and not stored. Example: [DIRT, STONE]
 ## Empty list = nothing ignored.
 backup-ignore-materials: []
 

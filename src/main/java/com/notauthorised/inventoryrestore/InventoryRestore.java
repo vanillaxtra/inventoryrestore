@@ -83,7 +83,7 @@ public class InventoryRestore extends InventoryRollback {
 
         // Storage Init & Update checker
         super.startupTasks();
-            
+
         // Ensure autosave/crash folders exist (even when using MySQL)
         YAML.ensureAutosaveFoldersExist();
 

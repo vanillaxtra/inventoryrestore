@@ -1,6 +1,7 @@
 package com.notauthorised.inventoryrestore.listeners;
 
 import com.notauthorised.inventoryrestore.InventoryRestore;
+import com.notauthorised.inventoryrestore.data.LastLiveInventoryStore;
 import com.notauthorised.inventoryrestore.data.OfflineRestoreManager;
 import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
 import com.notauthorised.inventoryrestore.config.ConfigData;
@@ -93,6 +94,8 @@ public class EventLogs implements Listener {
 		if (!ConfigData.isEnabled()) return;
 
 		Player player = e.getPlayer();
+
+		LastLiveInventoryStore.save(player);
 
 		if (player.hasPermission("inventoryrestore.leavesave")) {
 			new SaveInventory(e.getPlayer(), LogType.QUIT, null, null)

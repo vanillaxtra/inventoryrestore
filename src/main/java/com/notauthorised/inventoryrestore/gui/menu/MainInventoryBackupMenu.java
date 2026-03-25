@@ -9,6 +9,7 @@ import com.notauthorised.inventoryrestore.data.BackupActivityTracker;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
+import com.notauthorised.inventoryrestore.gui.GuiDecorItems;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -31,9 +32,9 @@ public class MainInventoryBackupMenu {
 	public static final int ACTIVITY_BOOK_SLOT = 53;
 	public static final String NBT_OPEN_BACKUP_ACTIVITY = "openBackupActivity";
 
-	/** Main grid + armor/offhand column (not the bottom button row). */
+	/** Main grid, grey gap (36–39), armor & off-hand (40–44). Not the bottom button row (45+). */
 	public static boolean isEditablePreviewSlot(int rawSlot) {
-		return (rawSlot >= 0 && rawSlot <= 35) || (rawSlot >= 40 && rawSlot <= 44);
+		return rawSlot >= 0 && rawSlot <= 44;
 	}
 	private final InventoryRestore main;
 
@@ -43,6 +44,7 @@ public class MainInventoryBackupMenu {
 	private final Long timestamp;
 	private final ItemStack[] mainInventory;
 	private final ItemStack[] armor;
+	private final ItemStack offhandBackup;
 	private final ItemStack[] enderChest;
 	private final String location;
 	private final double health;
@@ -64,6 +66,7 @@ public class MainInventoryBackupMenu {
 		this.timestamp = data.getTimestamp();
 		this.mainInventory = data.getMainInventory();
 		this.armor = data.getArmour();
+		this.offhandBackup = data.getOffhand();
 	    this.enderChest = data.getEnderChest();
 		this.location = location;
 		this.health = data.getHealth();
@@ -135,12 +138,22 @@ public class MainInventoryBackupMenu {
 		// Make sure we are not running this on the main thread
 		assert !Bukkit.isPrimaryThread();
 
-		int item = 0;
-		int position = 0;
+		// Armor / off-hand / gap first: previously these ran only after a per-slot overflow loop that
+		// blocked on one sync hop per item (many server ticks). Staff saw an empty armor row for a long time.
+		try {
+			Future<Void> previewRowFuture = main.getServer().getScheduler().callSyncMethod(main,
+					() -> {
+						applyArmorOffhandAndGap();
+						return null;
+					});
+			previewRowFuture.get();
+		} catch (ExecutionException | InterruptedException ex) {
+			ex.printStackTrace();
+		}
 
 		//If the backup file is invalid it will return null, we want to catch it here
 		try {
-    		// Add items, 5 per tick
+    		// Add items, 6 per tick (main grid only)
 			new BukkitRunnable() {
 
 				boolean processedHotbar;
@@ -181,45 +194,96 @@ public class MainInventoryBackupMenu {
 		    return;
 		}
 
-		item = 36;
-		position = 44;
-		
-		//Add armor
-		if (armor != null && armor.length > 0) {
+		// Overflow (no armor): extra main slots beyond 35 into the armor column — one sync batch, not one tick per item
+		if (!backupHasArmorPieces()) {
 			try {
-				for (int i = 0; i < armor.length; i++) {
-					// Place item safely
-					final int finalPos = position;
-					final int finalItem = i;
-					Future<Void> placeItemFuture = main.getServer().getScheduler().callSyncMethod(main,
-							() -> {
-								inventory.setItem(finalPos, armor[finalItem]);
-								return null;
-							});
-					placeItemFuture.get();
-					position--;
-				}
+				Future<Void> overflowFuture = main.getServer().getScheduler().callSyncMethod(main, () -> {
+					int position = 44;
+					for (int item = 36; item < mainInvLen && position >= 36; item++) {
+						if (mainInventory[item] != null) {
+							inventory.setItem(position, mainInventory[item]);
+							position--;
+						}
+					}
+					return null;
+				});
+				overflowFuture.get();
 			} catch (ExecutionException | InterruptedException ex) {
 				ex.printStackTrace();
 			}
-		} else {
-			try {
-				for (; item < mainInvLen; item++) {
-					if (mainInventory[item] != null) {
-						// Place item safely
-						final int finalPos = position;
-						final int finalItem = item;
-						Future<Void> placeItemFuture = main.getServer().getScheduler().callSyncMethod(main,
-								() -> {
-									inventory.setItem(finalPos, mainInventory[finalItem]);
-									return null;
-								});
-						placeItemFuture.get();
-						position--;
-					}
+		}
+
+		try {
+			Future<Void> decFuture = main.getServer().getScheduler().callSyncMethod(main,
+					() -> {
+						applyBottomRowGapsIfEmpty();
+						return null;
+					});
+			decFuture.get();
+		} catch (ExecutionException | InterruptedException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private boolean backupHasArmorPieces() {
+		if (armor == null) return false;
+		for (ItemStack p : armor) {
+			if (p != null && !p.getType().isAir()) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Slots 36–44: grey gap, armor from backup (or blue placeholders), off-hand from backup (or orange placeholder).
+	 * Does not touch the bottom button row (45–53).
+	 */
+	private void applyArmorOffhandAndGap() {
+		ItemStack gap = GuiDecorItems.grayGap();
+		for (int s = 36; s <= 39; s++) {
+			ItemStack cur = inventory.getItem(s);
+			if (cur == null || cur.getType().isAir()) {
+				inventory.setItem(s, gap.clone());
+			}
+		}
+
+		String[] armorNames = {"Boots", "Leggings", "Chestplate", "Helmet"};
+		if (backupHasArmorPieces()) {
+			for (int i = 0; i < 4; i++) {
+				int slot = 44 - i;
+				ItemStack piece = i < armor.length ? armor[i] : null;
+				if (piece != null && !piece.getType().isAir()) {
+					inventory.setItem(slot, piece.clone());
+				} else {
+					inventory.setItem(slot, GuiDecorItems.blueArmorSlot(armorNames[i]));
 				}
-			} catch (ExecutionException | InterruptedException ex) {
-				ex.printStackTrace();
+			}
+		} else {
+			for (int i = 0; i < 4; i++) {
+				int slot = 44 - i;
+				ItemStack cur = inventory.getItem(slot);
+				if (cur == null || cur.getType().isAir()) {
+					inventory.setItem(slot, GuiDecorItems.blueArmorSlot(armorNames[i]));
+				}
+			}
+		}
+
+		ItemStack at40 = inventory.getItem(40);
+		if (at40 == null || at40.getType().isAir()) {
+			if (offhandBackup != null && !offhandBackup.getType().isAir()) {
+				inventory.setItem(40, offhandBackup.clone());
+			} else {
+				inventory.setItem(40, GuiDecorItems.orangeOffhandPlaceholder());
+			}
+		}
+	}
+
+	/** Fill empty bottom-row slots with grey (buttons set in {@link #createInventory()} are left alone). */
+	private void applyBottomRowGapsIfEmpty() {
+		ItemStack gap = GuiDecorItems.grayGap();
+		for (int s = 45; s <= 53; s++) {
+			ItemStack cur = inventory.getItem(s);
+			if (cur == null || cur.getType().isAir()) {
+				inventory.setItem(s, gap.clone());
 			}
 		}
 	}

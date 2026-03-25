@@ -10,11 +10,13 @@ import com.notauthorised.inventoryrestore.config.ConfigData;
 import com.notauthorised.inventoryrestore.config.MessageData;
 import com.notauthorised.inventoryrestore.config.SoundData;
 import com.notauthorised.inventoryrestore.data.BackupActivityTracker;
+import com.notauthorised.inventoryrestore.data.LastLiveInventoryStore;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PendingGuiRestore;
 import com.notauthorised.inventoryrestore.data.OfflineRestoreManager;
 import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
+import com.notauthorised.inventoryrestore.gui.GuiDecorItems;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import com.notauthorised.inventoryrestore.gui.menu.BackupActivityMenu;
 import com.notauthorised.inventoryrestore.gui.menu.EnderChestBackupMenu;
@@ -37,8 +39,10 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -90,11 +94,17 @@ public class ClickGUI implements Listener {
             int topSz = e.getInventory().getSize();
             if (InventoryName.MAIN_BACKUP.getName().equals(dragTitle)) {
                 if (dragUsesOnlyEditableMainBackupSlots(e, topSz)) {
+                    if (dragWouldStripDecorFromTop(e)) {
+                        return;
+                    }
                     e.setCancelled(false);
                     return;
                 }
             } else if (InventoryName.OVERWRITE_WARNING.getName().equals(dragTitle)) {
                 if (dragUsesOnlyOverwritePreviewSlots(e, topSz)) {
+                    if (dragWouldStripDecorFromTop(e)) {
+                        return;
+                    }
                     e.setCancelled(false);
                     return;
                 }
@@ -121,11 +131,61 @@ public class ClickGUI implements Listener {
 
     private static boolean dragUsesOnlyOverwritePreviewSlots(InventoryDragEvent e, int topSize) {
         for (int raw : e.getRawSlots()) {
-            if (raw < topSize && raw > 35) {
+            if (raw < topSize && !MainInventoryBackupMenu.isEditablePreviewSlot(raw)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * True if this drag would empty a preview decor slot (grey / armor / off-hand glass) — staff may place over it, not pull it out.
+     */
+    private static boolean dragWouldStripDecorFromTop(InventoryDragEvent e) {
+        Inventory top = e.getView().getTopInventory();
+        int topSize = top.getSize();
+        for (int raw : e.getRawSlots()) {
+            if (raw >= topSize) continue;
+            ItemStack before = top.getItem(raw);
+            if (!GuiDecorItems.isNonTakeableDecor(before)) continue;
+            if (!e.getNewItems().containsKey(raw)) continue;
+            ItemStack after = e.getNewItems().get(raw);
+            if (after == null || after.getType().isAir() || after.getAmount() <= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Block taking GUI filler panes from the top inventory; placing items onto them stays allowed. */
+    private static boolean wouldRemoveDecorFromTopPreview(InventoryClickEvent e) {
+        Inventory clicked = e.getClickedInventory();
+        if (clicked == null || !clicked.equals(e.getView().getTopInventory())) {
+            return false;
+        }
+        ItemStack current = e.getCurrentItem();
+        if (!GuiDecorItems.isNonTakeableDecor(current)) {
+            return false;
+        }
+        InventoryAction a = e.getAction();
+        switch (a) {
+            case PICKUP_ALL:
+            case PICKUP_HALF:
+            case PICKUP_ONE:
+            case PICKUP_SOME:
+            case MOVE_TO_OTHER_INVENTORY:
+            case HOTBAR_MOVE_AND_READD:
+            case HOTBAR_SWAP:
+            case DROP_ALL_SLOT:
+            case DROP_ONE_SLOT:
+            case COLLECT_TO_CURSOR:
+                return true;
+            case SWAP_WITH_CURSOR:
+                ItemStack cur = e.getCursor();
+                return cur == null || cur.getType().isAir();
+            default:
+                return false;
+        }
     }
 
 
@@ -401,6 +461,13 @@ public class ClickGUI implements Listener {
                                 RestoreSession.isRefundContext(staff.getUniqueId()));
                         return;
                     }
+                } else {
+                    LastLiveInventoryStore.Loaded live = LastLiveInventoryStore.load(offlinePlayer.getUniqueId());
+                    if (live != null && live.isCompletelyEmpty()) {
+                        performFullRestore(staff, offlinePlayer, logType, timestamp,
+                                RestoreSession.isRefundContext(staff.getUniqueId()));
+                        return;
+                    }
                 }
                 OverwriteWarningMenu warnMenu = new OverwriteWarningMenu(staff, offlinePlayer, logType, timestamp);
                 staff.openInventory(warnMenu.getInventory());
@@ -537,24 +604,20 @@ public class ClickGUI implements Listener {
             int slotIndex = e.getRawSlot();
             int topInvSize = e.getView().getTopInventory().getSize();
             boolean clickIsWithinPlayerInventory = slotIndex >= topInvSize;
-
-            boolean clickIsWithinMainBackupInv = slotIndex < topInvSize - 18;
-            boolean notInLastLine = slotIndex < topInvSize - 9;
-            boolean notBeforeArmorSlots = slotIndex > topInvSize - 15;
-
-            boolean clickIsWithinArmorOrOffHandSlots = notInLastLine && notBeforeArmorSlots;
-            boolean isValidBackupMenuInteraction = clickIsWithinMainBackupInv || clickIsWithinArmorOrOffHandSlots;
+            boolean clickInTopPreview = slotIndex >= 0 && slotIndex < topInvSize - 9;
 
             // Player inventory: allow moves (including shift) so staff can pull from / push to the preview
             if (clickIsWithinPlayerInventory) {
                 if (staff.hasPermission("inventoryrestore.restore")) {
                     e.setCancelled(false);
                 }
-            } else if (isValidBackupMenuInteraction) {
-                if (staff.hasPermission("inventoryrestore.restore")) {
-                    e.setCancelled(false);
-                } else {
+            } else if (clickInTopPreview) {
+                if (!staff.hasPermission("inventoryrestore.restore")) {
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getNoPermission());
+                } else if (wouldRemoveDecorFromTopPreview(e)) {
+                    // keep cancelled: do not take grey / armor / off-hand filler panes
+                } else {
+                    e.setCancelled(false);
                 }
             }
         }
@@ -763,10 +826,15 @@ public class ClickGUI implements Listener {
         if (!InventoryName.OVERWRITE_WARNING.getName().equals(e.getView().getTitle())) return;
 
         int raw = e.getRawSlot();
-        if (raw >= 0 && raw < 36) {
-            if (staff.hasPermission("inventoryrestore.restore")) {
-                e.setCancelled(false);
+        int topSz = e.getView().getTopInventory().getSize();
+        if (raw >= 0 && raw < topSz - 9) {
+            if (!staff.hasPermission("inventoryrestore.restore")) {
+                return;
             }
+            if (wouldRemoveDecorFromTopPreview(e)) {
+                return;
+            }
+            e.setCancelled(false);
             return;
         }
         if (raw < 45) return;
@@ -862,7 +930,14 @@ public class ClickGUI implements Listener {
                     ItemStack offhand;
                     if (guiSnap != null) {
                         inv = guiSnap.getMainContents();
-                        armour = guiSnap.getArmorContents();
+                        ItemStack[] guiArm = guiSnap.getArmorContents();
+                        ItemStack[] diskArm = data.getArmour();
+                        armour = new ItemStack[4];
+                        for (int i = 0; i < 4; i++) {
+                            ItemStack g = guiArm[i];
+                            armour[i] = (g == null && diskArm != null && i < diskArm.length)
+                                    ? diskArm[i] : g;
+                        }
                         offhand = guiSnap.resolveOffhand(data.getOffhand());
                     } else {
                         inv = data.getMainInventory();
@@ -878,11 +953,6 @@ public class ClickGUI implements Listener {
                         }
                         // Always restore offhand with inventory (set or clear to match backup)
                         player.getInventory().setItemInOffHand(offhand != null && !offhand.getType().isAir() ? offhand : new ItemStack(Material.AIR));
-                        ItemStack[] ender = data.getEnderChest();
-                        if (ender != null) player.getEnderChest().setContents(ender);
-                        player.setFoodLevel(data.getFoodLevel());
-                        player.setSaturation(data.getSaturation());
-                        RestoreInventory.setTotalExperience(player, data.getXP());
                         if (SoundData.isInventoryRestoreEnabled())
                             player.playSound(player.getLocation(), SoundData.getInventoryRestored(), 1, 1);
                         player.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestoredPlayer(staff.getName()));
@@ -900,7 +970,14 @@ public class ClickGUI implements Listener {
                             staff.getUniqueId(), target.getUniqueId(), logType, backupTs);
                     if (guiSnap != null) {
                         ItemStack[] gInv = guiSnap.getMainContents();
-                        ItemStack[] gArm = guiSnap.getArmorContents();
+                        ItemStack[] guiArm = guiSnap.getArmorContents();
+                        ItemStack[] diskArm = data.getArmour();
+                        ItemStack[] gArm = new ItemStack[4];
+                        for (int i = 0; i < 4; i++) {
+                            ItemStack g = guiArm[i];
+                            gArm[i] = (g == null && diskArm != null && i < diskArm.length)
+                                    ? diskArm[i] : g;
+                        }
                         ItemStack gOff = guiSnap.resolveOffhand(data.getOffhand());
                         OfflineRestoreManager.scheduleRestore(target, logType, timestamp, gInv, gArm, gOff);
                     } else {

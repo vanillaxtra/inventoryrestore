@@ -16,6 +16,7 @@ import com.notauthorised.inventoryrestore.config.MessageData;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PlayerData;
 import com.notauthorised.inventoryrestore.gui.Buttons;
+import com.notauthorised.inventoryrestore.gui.GuiDecorItems;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import com.notauthorised.inventoryrestore.util.RelativeTime;
 
@@ -135,6 +136,15 @@ public class RollbackListMenu {
 
             inventory.setItem(position + 7, nextPage);
             lore.clear();
+        }
+
+        int sz = inventory.getSize();
+        ItemStack gap = GuiDecorItems.grayGap();
+        for (int s = sz - 9; s < sz; s++) {
+            ItemStack cur = inventory.getItem(s);
+            if (cur == null || cur.getType().isAir()) {
+                inventory.setItem(s, gap.clone());
+            }
         }
     }
 

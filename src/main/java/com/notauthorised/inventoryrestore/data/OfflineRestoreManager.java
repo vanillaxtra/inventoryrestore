@@ -2,7 +2,6 @@ package com.notauthorised.inventoryrestore.data;
 
 import com.notauthorised.inventoryrestore.InventoryRollback;
 import com.notauthorised.inventoryrestore.config.ConfigData;
-import com.notauthorised.inventoryrestore.inventory.RestoreInventory;
 import com.notauthorised.inventoryrestore.util.serialization.ItemStackSerialization;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -18,8 +17,9 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Deferred full restores for offline players. Stored under the plugin data folder so pending
- * restores survive restarts; the pending file is removed only after a successful apply.
+ * Deferred main-inventory restores for offline players (contents, armor, offhand only).
+ * Stored under the plugin data folder so pending restores survive restarts; the pending file
+ * is removed only after a successful apply.
  */
 public class OfflineRestoreManager {
 
@@ -119,11 +119,16 @@ public class OfflineRestoreManager {
             String ver = InventoryRollback.getPackageVersion();
             if (cfg.getBoolean("useGuiSnapshot", false)) {
                 inv = ItemStackSerialization.deserializeData(ver, cfg.getString("guiInv")).getItems();
-                armour = ItemStackSerialization.deserializeData(ver, cfg.getString("guiArmor")).getItems();
+                ItemStack[] guiArm = ItemStackSerialization.deserializeData(ver, cfg.getString("guiArmor")).getItems();
+                ItemStack[] diskArm = data.getArmour();
+                armour = new ItemStack[4];
+                for (int i = 0; i < 4; i++) {
+                    ItemStack g = guiArm != null && i < guiArm.length ? guiArm[i] : null;
+                    armour[i] = (g == null && diskArm != null && i < diskArm.length) ? diskArm[i] : g;
+                }
                 ItemStack[] offArr = ItemStackSerialization.deserializeData(ver, cfg.getString("guiOffhand")).getItems();
                 offhand = (offArr != null && offArr.length > 0) ? offArr[0] : null;
                 if (inv == null) inv = data.getMainInventory();
-                if (armour == null) armour = data.getArmour();
                 if (offhand == null) offhand = data.getOffhand();
             } else {
                 inv = data.getMainInventory();
@@ -138,11 +143,6 @@ public class OfflineRestoreManager {
                 player.getInventory().setArmorContents(java.util.Arrays.copyOf(armour, 4));
             }
             player.getInventory().setItemInOffHand(offhand != null && !offhand.getType().isAir() ? offhand : new ItemStack(Material.AIR));
-            ItemStack[] ender = data.getEnderChest();
-            if (ender != null) player.getEnderChest().setContents(ender);
-            player.setFoodLevel(data.getFoodLevel());
-            player.setSaturation(data.getSaturation());
-            RestoreInventory.setTotalExperience(player, data.getXP());
 
             if (!f.delete()) {
                 InventoryRollback.getInstance().getLogger().warning("Pending restore applied but could not delete: " + f.getAbsolutePath());

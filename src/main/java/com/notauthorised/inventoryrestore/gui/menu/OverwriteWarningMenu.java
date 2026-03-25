@@ -3,9 +3,11 @@ package com.notauthorised.inventoryrestore.gui.menu;
 import com.notauthorised.inventoryrestore.InventoryRestore;
 import com.notauthorised.inventoryrestore.customdata.CustomDataItemEditor;
 import com.notauthorised.inventoryrestore.config.MessageData;
+import com.notauthorised.inventoryrestore.data.LastLiveInventoryStore;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.RestoreSession;
 import com.notauthorised.inventoryrestore.gui.Buttons;
+import com.notauthorised.inventoryrestore.gui.GuiDecorItems;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -61,11 +63,10 @@ public class OverwriteWarningMenu {
         backNbt.setLong("timestamp", timestamp);
         inventory.setItem(45, backNbt.setItemData());
 
-        ItemStack confirmBtn = new ItemStack(Material.LIME_WOOL);
+        ItemStack confirmBtn = new ItemStack(Material.CLOCK);
         ItemMeta confirmMeta = confirmBtn.getItemMeta();
         if (confirmMeta != null) {
-            confirmMeta.setDisplayName(ChatColor.GREEN + "Confirm Rollback");
-            confirmMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Overwrites inventory, ender chest, XP, hunger"));
+            confirmMeta.setDisplayName(ChatColor.GREEN + "Confirm restore");
             confirmBtn.setItemMeta(confirmMeta);
         }
         CustomDataItemEditor confirmNbt = CustomDataItemEditor.editItem(confirmBtn);
@@ -84,10 +85,10 @@ public class OverwriteWarningMenu {
         if (warnMeta != null) {
             if (target.isOnline()) {
                 warnMeta.setDisplayName(ChatColor.YELLOW + "Their inventory now");
-                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Confirm still applies the backup"));
+                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Clock restores items & armor from backup only"));
             } else {
-                warnMeta.setDisplayName(ChatColor.YELLOW + "Player offline");
-                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Restore when they join"));
+                warnMeta.setDisplayName(ChatColor.YELLOW + "Their inventory (last quit)");
+                warnMeta.setLore(Collections.singletonList(ChatColor.GRAY + "If empty, they have not quit since plugin update"));
             }
             warnItem.setItemMeta(warnMeta);
         }
@@ -105,16 +106,52 @@ public class OverwriteWarningMenu {
                 ItemStack it = i < contents.length ? contents[i] : null;
                 inventory.setItem(i, it != null ? it.clone() : null);
             }
+            placeArmorOffhandAndGap(p.getInventory().getArmorContents(), p.getInventory().getItemInOffHand());
         } else {
-            for (int i = 0; i < 36; i++) {
-                inventory.setItem(i, null);
+            LastLiveInventoryStore.Loaded live = LastLiveInventoryStore.load(target.getUniqueId());
+            if (live != null && live.contents36 != null) {
+                for (int i = 0; i < 36; i++) {
+                    ItemStack it = i < live.contents36.length ? live.contents36[i] : null;
+                    inventory.setItem(i, it != null ? it.clone() : null);
+                }
+                placeArmorOffhandAndGap(live.armor, live.offhand);
+            } else {
+                for (int i = 0; i < 36; i++) {
+                    inventory.setItem(i, null);
+                }
+                inventory.setItem(13, new ItemStack(Material.BARRIER));
+                ItemMeta meta = inventory.getItem(13).getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(ChatColor.RED + "No saved layout");
+                    meta.setLore(Collections.singletonList(ChatColor.GRAY + "They need to quit once while the plugin is on"));
+                    inventory.getItem(13).setItemMeta(meta);
+                }
+                placeArmorOffhandAndGap(null, null);
             }
-            inventory.setItem(13, new ItemStack(Material.BARRIER));
-            ItemMeta meta = inventory.getItem(13).getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.RED + "Offline");
-                meta.setLore(Collections.singletonList(ChatColor.GRAY + "Inventory not shown"));
-                inventory.getItem(13).setItemMeta(meta);
+        }
+    }
+
+    /** Same layout as main backup: 36–39 gap, 40 off-hand, 41–44 armor (matches restore screen). */
+    private void placeArmorOffhandAndGap(ItemStack[] armorArr, ItemStack offHand) {
+        ItemStack gap = GuiDecorItems.grayGap();
+        for (int s = 36; s <= 39; s++) {
+            inventory.setItem(s, gap.clone());
+        }
+
+        if (offHand != null && !offHand.getType().isAir()) {
+            inventory.setItem(40, offHand.clone());
+        } else {
+            inventory.setItem(40, GuiDecorItems.orangeOffhandPlaceholder());
+        }
+
+        String[] armorNames = {"Boots", "Leggings", "Chestplate", "Helmet"};
+        for (int i = 0; i < 4; i++) {
+            int slot = 44 - i;
+            ItemStack piece = armorArr != null && i < armorArr.length ? armorArr[i] : null;
+            if (piece != null && !piece.getType().isAir()) {
+                inventory.setItem(slot, piece.clone());
+            } else {
+                inventory.setItem(slot, GuiDecorItems.blueArmorSlot(armorNames[i]));
             }
         }
     }

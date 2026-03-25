@@ -2,6 +2,7 @@ package com.notauthorised.inventoryrestore.gui.menu;
 
 import com.notauthorised.inventoryrestore.customdata.CustomDataItemEditor;
 import com.notauthorised.inventoryrestore.data.LogType;
+import com.notauthorised.inventoryrestore.gui.GuiDecorItems;
 import com.notauthorised.inventoryrestore.gui.InventoryName;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -84,20 +85,23 @@ public final class MainBackupGuiSnapshot {
         // Inverse of MainInventoryBackupMenu.showBackupItems: backup index 0..8 -> GUI 27..35, 9..35 -> GUI 0..26
         ItemStack[] main = new ItemStack[36];
         for (int gui = 0; gui <= 26; gui++) {
-            main[gui + 9] = cloneOrNull(top.getItem(gui));
+            main[gui + 9] = cloneOrNullMain(top.getItem(gui));
         }
         for (int gui = 27; gui <= 35; gui++) {
-            main[gui - 27] = cloneOrNull(top.getItem(gui));
+            main[gui - 27] = cloneOrNullMain(top.getItem(gui));
         }
 
         ItemStack[] armor = new ItemStack[4];
         for (int i = 0; i < 4; i++) {
             int guiSlot = 44 - i;
-            armor[i] = cloneOrNull(top.getItem(guiSlot));
+            ItemStack raw = top.getItem(guiSlot);
+            if (GuiDecorItems.isArmorPlaceholder(raw)) armor[i] = null;
+            else armor[i] = cloneOrNull(raw);
         }
 
         ItemStack rawOff = top.getItem(40);
-        boolean useDisk = rawOff == null || rawOff.getType().isAir();
+        boolean useDisk = rawOff == null || rawOff.getType().isAir()
+                || GuiDecorItems.isOffhandPlaceholder(rawOff);
         ItemStack offClone = useDisk ? null : rawOff.clone();
 
         return new MainBackupGuiSnapshot(expectedTarget, expectedLogType, expectedTimestamp,
@@ -107,5 +111,11 @@ public final class MainBackupGuiSnapshot {
     private static ItemStack cloneOrNull(ItemStack item) {
         if (item == null || item.getType().isAir()) return null;
         return item.clone();
+    }
+
+    /** Ignore grey gap panes if they appear in main grid (should not). */
+    private static ItemStack cloneOrNullMain(ItemStack item) {
+        if (GuiDecorItems.isGrayGap(item)) return null;
+        return cloneOrNull(item);
     }
 }
