@@ -160,6 +160,4 @@ Full permission tree is in **`plugin.yml`**.
 
 ## 📊 bStats
 
-[![bStats](https://img.shields.io/badge/bStats-inventory--restore-6366f1?style=flat-square)](https://bstats.org/plugin/bukkit/inventory-restore/30407)
-
-Anonymous usage metrics help gauge adoption and environments. Disable in `config.yml` with `bStats: false`.
+[![bStats: servers using InstantBrew](https://bstats.org/signatures/bukkit/inventory-restore.svg)](https://bstats.org/plugin/bukkit/inventory-restore/30407)
