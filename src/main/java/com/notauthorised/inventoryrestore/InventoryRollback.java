@@ -170,16 +170,16 @@ public abstract class InventoryRollback extends JavaPlugin {
         Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), () -> {
             logger.log(Level.INFO, MessageData.getPluginPrefix() + "Checking for updates...");
 
-            final UpdateResult result = new UpdateChecker(getInstance(), 85811).getResult();
+            final UpdateResult result = new UpdateChecker(getInstance()).getResult();
 
             switch (result) {
             case FAIL_SPIGOT:
-                logger.log(Level.INFO, MessageData.getPluginPrefix() + "Could not contact Spigot to check if an update is available.");
+                logger.log(Level.INFO, MessageData.getPluginPrefix() + "Could not check GitHub for updates.");
                 break;
             case UPDATE_AVAILABLE:		
                 logger.log(Level.INFO, ChatColor.AQUA + "======================================================================================");
                 logger.log(Level.INFO, ChatColor.AQUA + "An update to InventoryRestore is available!");
-                logger.log(Level.INFO, ChatColor.AQUA + "Download at https://www.spigotmc.org/resources/inventoryrestore.85811/");
+                logger.log(Level.INFO, ChatColor.AQUA + "Download at https://github.com/vanillaxtra/inventoryrestore/releases");
                 logger.log(Level.INFO, ChatColor.AQUA + "======================================================================================");
                 break;
             case NO_UPDATE:

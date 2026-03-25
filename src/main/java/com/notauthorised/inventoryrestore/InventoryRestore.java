@@ -198,16 +198,16 @@ public class InventoryRestore extends InventoryRollback {
         Bukkit.getScheduler().runTaskAsynchronously(InventoryRollback.getInstance(), () -> {
             InventoryRestore.getInstance().getConsoleSender().sendMessage(MessageData.getPluginPrefix() + "Checking for updates...");
 
-            final UpdateChecker.UpdateResult result = new UpdateChecker(getInstance(), 85811).getResult();
+            final UpdateChecker.UpdateResult result = new UpdateChecker(getInstance()).getResult();
 
             switch (result) {
                 case FAIL_SPIGOT:
-                    getConsoleSender().sendMessage(MessageData.getPluginPrefix() + ChatColor.GOLD + "Warning: Could not contact Spigot to check if an update is available.");
+                    getConsoleSender().sendMessage(MessageData.getPluginPrefix() + ChatColor.GOLD + "Warning: Could not check GitHub for updates.");
                     break;
                 case UPDATE_AVAILABLE:
                     getConsoleSender().sendMessage(ChatColor.AQUA + "===============================================================================");
                     getConsoleSender().sendMessage(ChatColor.AQUA + "An update to InventoryRestore is available!");
-                    getConsoleSender().sendMessage(ChatColor.AQUA + "Download at https://www.spigotmc.org/resources/inventoryrestore.85811/");
+                    getConsoleSender().sendMessage(ChatColor.AQUA + "Download at https://github.com/vanillaxtra/inventoryrestore/releases");
                     getConsoleSender().sendMessage(ChatColor.AQUA + "===============================================================================");
                     break;
                 case NO_UPDATE:
