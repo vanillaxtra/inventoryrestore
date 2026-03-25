@@ -40,13 +40,14 @@ backup-ignore-materials: []
 
 ### Staff GUIs
 
-![Main menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/mainmenu.png)
+
 
 - **Main menu** — browse players (restore mode shows names; refund mode can hide names for privacy).
+![Main menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/mainmenu.png)
 
-![Player / restore menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoremenu.png)
 
 - **Player menu** — choose backup category (join, quit, death, world change, force, crash).
+![Main inventory backup menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/backupmenu.png)
 
 | Joins | Quits | Deaths |
 |-------|-------|--------|
@@ -56,13 +57,13 @@ backup-ignore-materials: []
 |---------------|-------------|---------|
 | ![World change backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/worldchanges.png) | ![Force saves](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/forcesaves.png) | ![Crash backups](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/crashes.png) |
 
-![Rollback list](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/rollbacklist.png)
 
 - **Rollback list** — paginated list of snapshots with timestamps (timezone/format configurable).
 
-![Main inventory backup menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/backupmenu.png)
+![Rollback list](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/rollbacklist.png)
 
 - **Main inventory backup** — full **36-slot preview**, **armor & off-hand** in the same layout as vanilla, plus actions:
+![Player / restore menu](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoremenu.png)
   - Restore main inventory + armor + off-hand (with **overwrite warning** when the target still has items; skipped if their inventory is **completely empty** when detectable).
   - **Ender chest** backup view and restore.
   - **Hunger** and **XP** restore (when target is online).
@@ -70,10 +71,11 @@ backup-ignore-materials: []
   - **Export to storage** (extract items for manual handling).
   - **Backup activity** — who opened or restored a snapshot (audit trail).
 - **Overwrite warning** — shows the target’s **current** inventory (or last saved layout offline) including **armor & off-hand** before confirming a full restore.
+![Overwrite warning](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/overwritewarning.png)
 
 #### Screenshots — restore actions & tools
 
-| Teleport to backup coords | Ender chest (1) | Ender chest (2) |
+| Teleport to backup coords | Ender chest | Ender chest |
 |---------------------------|-----------------|-----------------|
 | ![Restore coords](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restorecoords.png) | ![Ender chest restore 1](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoreenderchest1.png) | ![Ender chest restore 2](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/restoreenderchest2.png) |
 
@@ -87,7 +89,7 @@ backup-ignore-materials: []
 
 ![Backup activity](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/backupactivity.png)
 
-![Overwrite warning](https://raw.githubusercontent.com/vanillaxtra/inventoryrestore/refs/heads/main/assets/overwritewarning.png)
+
 
 | Refund / restore history (1) | Refund / restore history (2) |
 |------------------------------|------------------------------|
