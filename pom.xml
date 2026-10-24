@@ -5,7 +5,7 @@
 
     <groupId>com.notauthorised.inventoryrestore</groupId>
     <artifactId>InventoryRestore</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
     <name>InventoryRestore</name>
     <url>https://github.com/notauthorised/InventoryRestore/</url>
@@ -94,7 +94,7 @@
         <dependency>
             <groupId>com.tcoded.lightlibs</groupId>
             <artifactId>BukkitVersion</artifactId>
-            <version>0.0.17</version>
+            <version>0.0.24</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
