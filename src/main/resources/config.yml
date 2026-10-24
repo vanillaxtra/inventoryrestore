@@ -93,7 +93,7 @@ refund-webhook:
 autosave-enabled: true
 autosave-interval-seconds: 30
       
-## Check for updates on GitHub Releases (vanillaxtra/inventoryrestore) when the server starts.
+## Check for updates on Modrinth (modrinth.com/plugin/inventoryrestore) when the server starts.
 update-checker: true
 
 ## Allow bStats to collect anonymous server data.

@@ -174,12 +174,12 @@ public abstract class InventoryRollback extends JavaPlugin {
 
             switch (result) {
             case FAIL_SPIGOT:
-                logger.log(Level.INFO, MessageData.getPluginPrefix() + "Could not check GitHub for updates.");
+                logger.log(Level.INFO, MessageData.getPluginPrefix() + "Could not check Modrinth for updates.");
                 break;
             case UPDATE_AVAILABLE:		
                 logger.log(Level.INFO, ChatColor.AQUA + "======================================================================================");
                 logger.log(Level.INFO, ChatColor.AQUA + "An update to InventoryRestore is available!");
-                logger.log(Level.INFO, ChatColor.AQUA + "Download at https://github.com/vanillaxtra/inventoryrestore/releases");
+                logger.log(Level.INFO, ChatColor.AQUA + "Download at https://modrinth.com/plugin/inventoryrestore/versions");
                 logger.log(Level.INFO, ChatColor.AQUA + "======================================================================================");
                 break;
             case NO_UPDATE:

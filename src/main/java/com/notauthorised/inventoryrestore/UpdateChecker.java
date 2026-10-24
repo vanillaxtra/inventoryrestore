@@ -14,18 +14,13 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Compares the running plugin version to the latest GitHub release (or newest tag).
- * API: <a href="https://docs.github.com/en/rest/releases/releases">GitHub Releases REST</a>
- */
+
 public class UpdateChecker {
 
-    private static final String GITHUB_OWNER = "vanillaxtra";
-    private static final String GITHUB_REPO = "inventoryrestore";
+    private static final String MODRINTH_SLUG = "inventoryrestore";
+    private static final String VERSIONS_URL = "https://api.modrinth.com/v2/project/" + MODRINTH_SLUG + "/version";
 
-    private static final Pattern TAG_NAME = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
-    /** Tag listing: each tag object includes "name":"…" */
-    private static final Pattern TAG_OBJECT_NAME = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern VERSION_OBJECT = Pattern.compile("\"version_number\"\\s*:\\s*\"([^\"]+)\"");
 
     private final String currentVersion;
     private String availableVersion;
@@ -42,19 +37,26 @@ public class UpdateChecker {
         this.currentVersion = normalizeVersion(plugin.getDescription().getVersion());
         String ua = "InventoryRestore/" + (currentVersion.isEmpty() ? "unknown" : currentVersion);
         try {
-            String remote = fetchLatestReleaseTag(ua);
-            if (remote == null || remote.isEmpty()) {
-                remote = fetchBestTagFromApi(ua);
-            }
-            if (remote == null || remote.isEmpty()) {
+            List<String> published = fetchVersionNumbers(ua);
+            if (published.isEmpty()) {
                 result = UpdateResult.FAIL_SPIGOT;
                 return;
             }
-            this.availableVersion = normalizeVersion(remote);
-            if (this.availableVersion.isEmpty()) {
+            String best = null;
+            String bestNorm = null;
+            for (String v : published) {
+                String norm = normalizeVersion(v);
+                if (norm.isEmpty()) continue;
+                if (bestNorm == null || compareVersions(norm, bestNorm) > 0) {
+                    best = v;
+                    bestNorm = norm;
+                }
+            }
+            if (best == null || bestNorm.isEmpty()) {
                 result = UpdateResult.FAIL_SPIGOT;
                 return;
             }
+            this.availableVersion = bestNorm;
             if (compareVersions(this.availableVersion, this.currentVersion) > 0) {
                 result = UpdateResult.UPDATE_AVAILABLE;
             } else {
@@ -65,57 +67,24 @@ public class UpdateChecker {
         }
     }
 
-    private String fetchLatestReleaseTag(String userAgent) throws IOException {
-        String url = "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO + "/releases/latest";
-        HttpURLConnection con = open(url, userAgent);
+    private List<String> fetchVersionNumbers(String userAgent) throws IOException {
+        HttpURLConnection con = open(VERSIONS_URL, userAgent);
         int code = con.getResponseCode();
         String body = readBody(con);
-        if (code == 404) {
-            return null;
+        if (code != 200 || body.isEmpty()) {
+            return new ArrayList<>();
         }
-        if (code != 200) {
-            return null;
-        }
-        Matcher m = TAG_NAME.matcher(body);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return null;
-    }
-
-    private String fetchBestTagFromApi(String userAgent) throws IOException {
-        String url = "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO + "/tags?per_page=100";
-        HttpURLConnection con = open(url, userAgent);
-        if (con.getResponseCode() != 200) {
-            return null;
-        }
-        String body = readBody(con);
-        List<String> names = new ArrayList<>();
-        Matcher m = TAG_OBJECT_NAME.matcher(body);
+        List<String> out = new ArrayList<>();
+        Matcher m = VERSION_OBJECT.matcher(body);
         while (m.find()) {
-            names.add(m.group(1));
+            out.add(m.group(1));
         }
-        if (names.isEmpty()) {
-            return null;
-        }
-        String best = null;
-        String bestNorm = null;
-        for (String name : names) {
-            String norm = normalizeVersion(name);
-            if (norm.isEmpty()) {
-                continue;
-            }
-            if (bestNorm == null || compareVersions(norm, bestNorm) > 0) {
-                best = name;
-                bestNorm = norm;
-            }
-        }
-        return best;
+        return out;
     }
 
     private static HttpURLConnection open(String urlStr, String userAgent) throws IOException {
         HttpURLConnection con = (HttpURLConnection) new URL(urlStr).openConnection();
-        con.setRequestProperty("Accept", "application/vnd.github+json");
+        con.setRequestProperty("Accept", "application/json");
         con.setRequestProperty("User-Agent", userAgent);
         con.setConnectTimeout(10_000);
         con.setReadTimeout(10_000);
@@ -143,9 +112,6 @@ public class UpdateChecker {
         }
     }
 
-    /**
-     * @return positive if a &gt; b, 0 if equal, negative if a &lt; b
-     */
     private static int compareVersions(String a, String b) {
         if (a.isEmpty() || b.isEmpty()) {
             return a.compareTo(b);

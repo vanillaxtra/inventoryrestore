@@ -202,12 +202,12 @@ public class InventoryRestore extends InventoryRollback {
 
             switch (result) {
                 case FAIL_SPIGOT:
-                    getConsoleSender().sendMessage(MessageData.getPluginPrefix() + ChatColor.GOLD + "Warning: Could not check GitHub for updates.");
+                    getConsoleSender().sendMessage(MessageData.getPluginPrefix() + ChatColor.GOLD + "Warning: Could not check Modrinth for updates.");
                     break;
                 case UPDATE_AVAILABLE:
                     getConsoleSender().sendMessage(ChatColor.AQUA + "===============================================================================");
                     getConsoleSender().sendMessage(ChatColor.AQUA + "An update to InventoryRestore is available!");
-                    getConsoleSender().sendMessage(ChatColor.AQUA + "Download at https://github.com/vanillaxtra/inventoryrestore/releases");
+                    getConsoleSender().sendMessage(ChatColor.AQUA + "Download at https://modrinth.com/plugin/inventoryrestore/versions");
                     getConsoleSender().sendMessage(ChatColor.AQUA + "===============================================================================");
                     break;
                 case NO_UPDATE:

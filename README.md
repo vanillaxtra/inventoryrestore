@@ -152,7 +152,7 @@ Full permission tree is in **`plugin.yml`**.
 | `backup-ignore-materials` | Bukkit material names to skip. |
 | `refund-webhook` | Discord POST on refund-path full restore. |
 | `autosave-*` | Interval autosave + crash recovery behavior. |
-| `update-checker` | GitHub Releases update notice (`vanillaxtra/inventoryrestore`). |
+| `update-checker` | Modrinth update notice (`modrinth.com/plugin/inventoryrestore`). |
 | `bStats` | Anonymous metrics (see below). |
 | `debug` | Extra console logging. |
 
