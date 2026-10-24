@@ -99,7 +99,7 @@ public final class RestoreStatsManager {
         }
     }
 
-    public static List<BackupRefundSummary> listBackupRefundSummaries(UUID uuid, int max) {
+    public static synchronized List<BackupRefundSummary> listBackupRefundSummaries(UUID uuid, int max) {
         if (yaml == null) init();
         ConfigurationSection s = section(uuid);
         ConfigurationSection per = s.getConfigurationSection("per-backup-refunds");
@@ -137,7 +137,7 @@ public final class RestoreStatsManager {
         return out;
     }
 
-    public static void recordFullRestore(UUID targetUuid, String staffName, boolean refund,
+    public static synchronized void recordFullRestore(UUID targetUuid, String staffName, boolean refund,
                                          LogType logType, long backupTimestamp) {
         if (yaml == null) init();
         ConfigurationSection s = section(targetUuid);
@@ -165,12 +165,12 @@ public final class RestoreStatsManager {
         save();
     }
 
-    public static int getBackupRefundCount(UUID uuid, LogType logType, long backupTimestamp) {
+    public static synchronized int getBackupRefundCount(UUID uuid, LogType logType, long backupTimestamp) {
         if (yaml == null) init();
         return section(uuid).getInt("per-backup-refunds." + backupKey(logType, backupTimestamp), 0);
     }
 
-    public static List<RefundEvent> listRefundEvents(UUID uuid, int max) {
+    public static synchronized List<RefundEvent> listRefundEvents(UUID uuid, int max) {
         if (yaml == null) init();
         List<String> raw = section(uuid).getStringList("refund-events");
         List<RefundEvent> out = new ArrayList<>();
@@ -182,32 +182,32 @@ public final class RestoreStatsManager {
         return out;
     }
 
-    public static int getRestoreCount(UUID uuid) {
+    public static synchronized int getRestoreCount(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getInt("restore.count", 0);
     }
 
-    public static int getRefundCount(UUID uuid) {
+    public static synchronized int getRefundCount(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getInt("refund.count", 0);
     }
 
-    public static long getLastRestoreTime(UUID uuid) {
+    public static synchronized long getLastRestoreTime(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getLong("restore.last_time", 0);
     }
 
-    public static long getLastRefundTime(UUID uuid) {
+    public static synchronized long getLastRefundTime(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getLong("refund.last_time", 0);
     }
 
-    public static String getLastRestoreStaff(UUID uuid) {
+    public static synchronized String getLastRestoreStaff(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getString("restore.last_staff", "");
     }
 
-    public static String getLastRefundStaff(UUID uuid) {
+    public static synchronized String getLastRefundStaff(UUID uuid) {
         if (yaml == null) init();
         return section(uuid).getString("refund.last_staff", "");
     }

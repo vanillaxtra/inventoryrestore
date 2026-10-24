@@ -958,12 +958,15 @@ public class ClickGUI implements Listener {
                         player.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestoredPlayer(staff.getName()));
                         if (!staff.getUniqueId().equals(player.getUniqueId()))
                             staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestored(target.getName()));
-                        RestoreStatsManager.recordFullRestore(
-                                target.getUniqueId(), staff.getName(), refund, logType, backupTs);
-                        BackupActivityTracker.recordRestore(staff.getName(), target.getUniqueId(), logType, backupTs);
-                        if (refund) {
-                            DiscordRefundWebhook.sendAsync(staff.getName(), target.getName(), logType, backupTs);
-                        }
+                        // Audit writes are full-file YAML saves — keep them off the main thread
+                        Bukkit.getScheduler().runTaskAsynchronously(main, () -> {
+                            RestoreStatsManager.recordFullRestore(
+                                    target.getUniqueId(), staff.getName(), refund, logType, backupTs);
+                            BackupActivityTracker.recordRestore(staff.getName(), target.getUniqueId(), logType, backupTs);
+                            if (refund) {
+                                DiscordRefundWebhook.sendAsync(staff.getName(), target.getName(), logType, backupTs);
+                            }
+                        });
                     });
                 } else {
                     MainBackupGuiSnapshot guiSnap = PendingGuiRestore.takeIfMatches(

@@ -14,6 +14,9 @@ import java.util.logging.Level;
 
 /**
  * Tracks who opened a backup (view) and who ran a full restore, per backup snapshot.
+ * ponytail: all access is synchronized on one shared YamlConfiguration and save() rewrites the
+ * whole file per event — fine for hundreds of entries, upgrade to per-key files or SQLite if the
+ * file grows into the thousands of events.
  */
 public final class BackupActivityTracker {
 
@@ -110,7 +113,7 @@ public final class BackupActivityTracker {
         save();
     }
 
-    public static List<ActivityEntry> listEvents(UUID targetUuid, LogType logType, long backupTimestamp, int max) {
+    public static synchronized List<ActivityEntry> listEvents(UUID targetUuid, LogType logType, long backupTimestamp, int max) {
         if (yaml == null) init();
         List<String> raw = eventList(targetUuid, logType, backupTimestamp);
         List<ActivityEntry> out = new ArrayList<>();
@@ -122,7 +125,7 @@ public final class BackupActivityTracker {
         return out;
     }
 
-    public static int countViews(UUID targetUuid, LogType logType, long backupTimestamp) {
+    public static synchronized int countViews(UUID targetUuid, LogType logType, long backupTimestamp) {
         int n = 0;
         for (ActivityEntry e : listEvents(targetUuid, logType, backupTimestamp, 500)) {
             if (!e.restore) n++;
@@ -130,7 +133,7 @@ public final class BackupActivityTracker {
         return n;
     }
 
-    public static int countRestores(UUID targetUuid, LogType logType, long backupTimestamp) {
+    public static synchronized int countRestores(UUID targetUuid, LogType logType, long backupTimestamp) {
         int n = 0;
         for (ActivityEntry e : listEvents(targetUuid, logType, backupTimestamp, 500)) {
             if (e.restore) n++;
