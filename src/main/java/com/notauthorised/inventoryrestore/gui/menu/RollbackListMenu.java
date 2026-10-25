@@ -11,7 +11,9 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import com.notauthorised.inventoryrestore.InventoryRollback;
 import com.notauthorised.inventoryrestore.config.MessageData;
 import com.notauthorised.inventoryrestore.data.LogType;
 import com.notauthorised.inventoryrestore.data.PlayerData;
@@ -27,7 +29,7 @@ public class RollbackListMenu {
     private Player staff;
     private UUID playerUUID;
     private LogType logType;
-    
+
     private Buttons buttons;
     private Inventory inventory;
 
@@ -37,18 +39,18 @@ public class RollbackListMenu {
         this.logType = logType;
         this.pageNumber = pageNumberIn;
         this.buttons = new Buttons(playerUUID);
-        
+
         createInventory();
     }
-    
+
     public void createInventory() {
         inventory = Bukkit.createInventory(staff, InventoryName.ROLLBACK_LIST.getSize(), InventoryName.ROLLBACK_LIST.getName());
-        
-        List<String> lore = new ArrayList<>();  
+
+        List<String> lore = new ArrayList<>();
         if (pageNumber == 1) {
             ItemStack mainMenu = buttons.mainMenuNavButton(MessageData.getMainMenuButton(), logType);
             inventory.setItem(InventoryName.ROLLBACK_LIST.getSize() - 8, mainMenu);
-        }       
+        }
 
         if (pageNumber > 1) {
             lore.add("Page " + (pageNumber - 1));
@@ -58,11 +60,12 @@ public class RollbackListMenu {
             lore.clear();
         }
     }
-    
+
     public Inventory getInventory() {
         return this.inventory;
     }
 
+    // streaming into GUI rather than wiaitng for all to load before starting
     public void showBackups() {
         PlayerData playerData = new PlayerData(playerUUID, logType, null);
 
@@ -86,55 +89,76 @@ public class RollbackListMenu {
         int backupsOnCurrentPage = Math.min(backups, Math.min(spaceRequired, backups - backupsAlreadyPassed));
         List<Long> timeStamps = playerData.getSelectedPageTimestamps(pageNumber);
 
-        int position = 0;
-        for (int i = 0; i < backupsOnCurrentPage; i++) {
-            try {
-                Long timestamp = timeStamps.get(i);
-                playerData = new PlayerData(playerUUID, logType, timestamp);
+        new BukkitRunnable() {
+            int position = 0;
 
-                playerData.getRollbackMenuData();
-
-                String when = PlayerData.getTime(timestamp);
-                String displayName = MessageData.getDeathTime(when + ChatColor.DARK_GRAY + " (" + RelativeTime.ago(timestamp) + ")");
-
-                List<String> lore = new ArrayList<>();
-
-                String deathReason = playerData.getDeathReason();
-                String reasonText = deathReason != null && !deathReason.isEmpty()
-                        ? deathReason
-                        : (logType == LogType.DEATH ? "Unknown" : logType.name());
-                lore.add(MessageData.getDeathReason(reasonText));
-                for (int start = 45; start < reasonText.length(); start += 45) {
-                    int end = Math.min(reasonText.length(), start + 45);
-                    lore.add(ChatColor.GRAY + reasonText.substring(start, end));
+            @Override
+            public void run() {
+                // Fill bottom row and stop once every slot on this page is populated
+                if (position >= backupsOnCurrentPage) {
+                    finishPage(pagesRequired);
+                    this.cancel();
+                    return;
                 }
 
-                String world = playerData.getWorld();
-                double x = playerData.getX();
-                double y = playerData.getY();
-                double z = playerData.getZ();
-                String location = world + "," + x + "," + y + "," + z;
+                try {
+                    // Staff closed the menu mid-stream: stop writing into whatever they have open now
+                    if (!InventoryName.ROLLBACK_LIST.getName().equals(staff.getOpenInventory().getTitle())) {
+                        this.cancel();
+                        return;
+                    }
+                    Long timestamp = timeStamps.get(position);
+                    PlayerData backupData = new PlayerData(playerUUID, logType, timestamp);
 
-                if (world != null && !world.isEmpty())
-                    lore.add(MessageData.getDeathLocationWorld(world));
+                    backupData.getRollbackMenuData();
 
-                ItemStack item = buttons.createInventoryButton(new ItemStack(Material.CHEST), logType, location, timestamp, displayName, lore);
+                    String when = PlayerData.getTime(timestamp);
+                    String displayName = MessageData.getDeathTime(when + ChatColor.DARK_GRAY + " (" + RelativeTime.ago(timestamp) + ")");
 
-                inventory.setItem(position, item);
+                    List<String> lore = new ArrayList<>();
 
-            } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
+                    String deathReason = backupData.getDeathReason();
+                    String reasonText = deathReason != null && !deathReason.isEmpty()
+                            ? deathReason
+                            : (logType == LogType.DEATH ? "Unknown" : logType.name());
+                    lore.add(MessageData.getDeathReason(reasonText));
+                    for (int start = 45; start < reasonText.length(); start += 45) {
+                        int end = Math.min(reasonText.length(), start + 45);
+                        lore.add(ChatColor.GRAY + reasonText.substring(start, end));
+                    }
+
+                    String world = backupData.getWorld();
+                    double x = backupData.getX();
+                    double y = backupData.getY();
+                    double z = backupData.getZ();
+                    String location = world + "," + x + "," + y + "," + z;
+
+                    if (world != null && !world.isEmpty())
+                        lore.add(MessageData.getDeathLocationWorld(world));
+
+                    ItemStack item = buttons.createInventoryButton(new ItemStack(Material.CHEST), logType, location, timestamp, displayName, lore);
+
+                    // Show it the moment it is ready — the player sees the page building up live
+                    inventory.setItem(position, item);
+                } catch (IndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
+
+                position++;
             }
+        }.runTaskTimerAsynchronously(InventoryRollback.getInstance(), 0L, 1L);
+    }
 
-            position++;
-        }
-
+    /** Bottom row (nav + gap panes); runs once the page is fully populated. */
+    private void finishPage(int pagesRequired) {
+        // Next-page button sits right after the last filled slot
         List<String> lore = new ArrayList<>();
+        int lastFilled = lastFilledSlot();
         if (pageNumber < pagesRequired) {
             lore.add("Page " + (pageNumber + 1));
             ItemStack nextPage = buttons.nextButton(MessageData.getNextPageButton(), logType, pageNumber + 1, lore);
 
-            inventory.setItem(position + 7, nextPage);
+            inventory.setItem(lastFilled + 7, nextPage);
             lore.clear();
         }
 
@@ -146,6 +170,18 @@ public class RollbackListMenu {
                 inventory.setItem(s, gap.clone());
             }
         }
+    }
+
+    /** First slot of the bottom row that is still empty (the "next" button anchor). */
+    private int lastFilledSlot() {
+        int sz = inventory.getSize();
+        for (int s = sz - 10; s >= 0; s--) {
+            ItemStack cur = inventory.getItem(s);
+            if (cur != null && !cur.getType().isAir()) {
+                return s;
+            }
+        }
+        return 0;
     }
 
 }
